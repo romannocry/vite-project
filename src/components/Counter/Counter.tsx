@@ -7,14 +7,11 @@ function Counter() {
   const { id } = useParams();
 
   return (
-    <>
       <div className={styles.card}>
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count} and id is {id}
         </button>
       </div>
-
-    </>
   )
 }
 

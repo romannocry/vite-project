@@ -1,58 +1,17 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import Counter from './components/Counter/Counter'
-import CounterList from './components/Counter/CounterList'
 //import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { HashRouter as Router, Route, Routes } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-    {/* with hashRouter, no basename required, I believe it is the only way for Github pages deployment*/}
     <Router>
-      <div>
-        <Routes>
-          <Route path="/counters/:id" element={<CounterList />} />
-
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={null} />
+        <Route path="/counters/:id" element={<Counter />} /> {/* Ensure this path is correct */}
+      </Routes>
     </Router>
-   
-
-      <div>
-      
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-      <Counter></Counter>
-      <Counter></Counter>
-      <Counter></Counter>
-      <Counter></Counter>
-      <Counter></Counter>
-
-    </>
   )
 }
 
