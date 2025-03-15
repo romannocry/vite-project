@@ -13,7 +13,8 @@ function App() {
 
   return (
     <>
-    <Router basename="/vite-project">
+    {/* with hashRouter, no basename required, I believe it is the only way for Github pages deployment*/}
+    <Router basename="">
       <div>
         <Routes>
           <Route path="/counters/:id" element={<CounterList />} />
