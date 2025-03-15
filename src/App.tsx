@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
+import Counter from './components/Counter/Counter'
+import CounterList from './components/Counter/CounterList'
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import './App.css'
 
 function App() {
@@ -8,6 +11,15 @@ function App() {
 
   return (
     <>
+    <Router basename="/vite-project">
+      <div>
+        <Routes>
+          <Route path="/counters/:id" element={<CounterList />} />
+
+        </Routes>
+      </div>
+    </Router>
+    
       <div>
         <a href="https://vite.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
@@ -28,6 +40,12 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <Counter></Counter>
+      <Counter></Counter>
+      <Counter></Counter>
+      <Counter></Counter>
+      <Counter></Counter>
+
     </>
   )
 }
