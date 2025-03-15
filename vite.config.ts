@@ -7,5 +7,5 @@ export default defineConfig({
   build: {
     outDir: 'docs',
   },
-
+  base: '/vite-project/',  // Replace 'repository-name' with your actual repo name
 })
