@@ -16,9 +16,6 @@ function Home() {
         <>
             <div>
                 <h1>Home</h1>
-                <Link to="/counters/1">Go to Counter 1</Link>
-                <br />
-                <Link to="/dataset/create">Create Dataset</Link>
             </div>
         </>
         );
