@@ -9,7 +9,7 @@ function Counter() {
   return (
       <div className={styles.card}>
         <button onClick={() => setCount((count) => count + 1)}>
-          count is {count} and id is {id}
+          count is {count} and id isss {id}
         </button>
       </div>
   )
