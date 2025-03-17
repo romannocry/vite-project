@@ -10,6 +10,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import DatabaseList from './components/Database/DatabaseList';
 import Home from './components/Home/Home';
 import Dataset from './components/Dataset/Dataset';
+import Database from './components/Database/Database';
+import DatasetList from './components/Dataset/DatasetList';
 
 function App() {
   return (
@@ -27,9 +29,9 @@ function App() {
       {/* Always visible links */}
       <div>
         <h1>Navigation</h1>
-        <Link to="/dataset/create">Create Dataset</Link>
+        <Link to="/databases">List Databases</Link>
         <br />
-        <Link to="/databases">Databases</Link>
+        <Link to="/database/register">Register Database</Link>
         <br />
       </div>
 
@@ -37,9 +39,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} /> {/* Counter page route */}
         <Route path="/counters/:id" element={<Counter />} /> {/* Counter page route */}
-        <Route path="/dataset/create" element={<CreateDataset />} /> {/* CreateDataset page route */}
         <Route path="/database/register" element={<RegisterDatabase />} /> {/* CreateDataset page route */}
-        <Route path="/database/:databaseid/datasets" element={<RegisterDatabase />} /> {/* CreateDataset page route */}
+        <Route path="/database/:databaseid" element={<DatasetList />} /> {/* CreateDataset page route */}
         <Route path="/database/:databaseid/datasets/:datasetId" element={<Dataset />} /> {/* CreateDataset page route */}
         <Route path="/database/:databaseid/create-dataset" element={<CreateDataset />} /> {/* CreateDataset page route */}
         <Route path="/databases" element={<DatabaseList />} /> {/* CreateDataset page route */}

@@ -39,11 +39,11 @@ function DatabaseList() {
         <div>
             <h1>Database List</h1>
             {databases.length > 0 ? (
-            <ul>
+            <div>
                 {databases.map((database, index) => (
                 <Database database={database} key={index} />
                 ))}
-            </ul>
+            </div>
             ) : (
                 <>
                     <p>You don't have databases. Register your first database</p>

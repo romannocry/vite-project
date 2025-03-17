@@ -20,7 +20,7 @@ function Database(db: any) {
                 {database.name}
                 <ButtonToolbar>
                     <ButtonGroup size="sm">
-                    <Button outline><Link to={`/database/${database.name}/datasets`}>Datasets</Link></Button>
+                    <Button outline><Link to={`/database/${database.name}`}>Datasets</Link></Button>
                     <Button outline><Link to={`/database/${database.name}/create-dataset`}>Create Dataset</Link></Button>
                     </ButtonGroup>
                 </ButtonToolbar>     

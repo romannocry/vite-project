@@ -5,7 +5,6 @@ import { Button } from 'reactstrap';
 
 //const API_URL = import.meta.env.VITE_BACKEND_API_URL
 const LAMBDA_API_URI = import.meta.env.VITE_LAMBDA_API_URI
-const LAMBDA_APP_DB = import.meta.env.VITE_LAMBDA_APP_DATABASE_NAME
 
 interface Dataset {
     uuid?: string;
@@ -29,7 +28,7 @@ function CreateDataset() {
         console.log("handling submit")
         try {
             console.log("submit")
-            fetch(LAMBDA_API_URI+'/'+LAMBDA_APP_DB, {
+            fetch(LAMBDA_API_URI+'/'+databaseid+'/'+dataset.name, {
                 method: 'POST',
                 headers: {
                 'Content-Type': 'application/json',
