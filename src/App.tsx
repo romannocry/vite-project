@@ -37,7 +37,7 @@ function App() {
 
       {/* Page-specific content */}
       <Routes>
-        <Route path="/" element={<Home />} /> {/* Counter page route */}
+        <Route path="/" element={<DatabaseList />} /> {/* Counter page route */}
         <Route path="/counters/:id" element={<Counter />} /> {/* Counter page route */}
         <Route path="/database/register" element={<RegisterDatabase />} /> {/* CreateDataset page route */}
         <Route path="/database/:databaseid" element={<DatasetList />} /> {/* CreateDataset page route */}

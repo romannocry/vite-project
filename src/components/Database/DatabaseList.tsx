@@ -2,13 +2,23 @@
 import { useState, useEffect, useRef } from 'react'
 import Database from './Database';
 import RegisterDatabase from './RegisterDatabase';
+import Container from '@mui/material/Container';
+import { Grid2 } from '@mui/material';
+//import { Card, CardHeader } from 'reactstrap';
+
+
 
 const LAMBDA_API_URI = import.meta.env.VITE_LAMBDA_API_URI
 
+interface Dataset {
+    creator: string;
+    name: string;
+  }
+
 function DatabaseList() {
 
-   const [databases, setDatabases] = useState([]);
-   const [isLoading, setIsLoading] = useState(false);
+    const [databases, setDatabases] = useState<Dataset[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
    const componentIsMounted = useRef(true);
     
     useEffect(() => {
@@ -27,6 +37,13 @@ function DatabaseList() {
         })
         .catch((err) => {
             console.error(err.message);
+            setDatabases([
+                {"creator": "roman", "name": "yolo"},
+                {"creator": "roman", "name": "dodo"},
+                {"creator": "roman", "name": "carto"},
+                {"creator": "roman", "name": "zouz"},
+                {"creator": "john", "name": "roman"},
+            ])
             setIsLoading(false); // Hide loading screen
         });
         return () => {
@@ -36,21 +53,22 @@ function DatabaseList() {
 
     return (
         <>
-        <div>
             <h1>Database List</h1>
             {databases.length > 0 ? (
-            <div>
-                {databases.map((database, index) => (
-                <Database database={database} key={index} />
-                ))}
-            </div>
+                <Grid2 container spacing={2} padding={2}>
+                    {databases.map((database: any, index: any) => (
+                    <Grid2 key={index} size={4}>
+                        <Database database={database} key={index} />
+                    </Grid2>
+
+                    ))}
+                </Grid2>
             ) : (
                 <>
                     <p>You don't have databases. Register your first database</p>
                     <RegisterDatabase/>
                 </>
             )}
-        </div>
         </>
         );
     }
