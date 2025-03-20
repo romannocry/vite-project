@@ -54,7 +54,8 @@ function DatabaseList() {
     return (
         <>
             <h1>Database List</h1>
-            {databases.length > 0 ? (
+            {/* {databases.length > 0 ? ( */}
+            {databases.length < 0 ? (
                 <Grid2 container spacing={2} padding={2}>
                     {databases.map((database: any, index: any) => (
                     <Grid2 key={index} size={4}>
@@ -65,8 +66,10 @@ function DatabaseList() {
                 </Grid2>
             ) : (
                 <>
+                <Container>
                     <p>You don't have databases. Register your first database</p>
                     <RegisterDatabase/>
+                    </Container>
                 </>
             )}
         </>
