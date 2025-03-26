@@ -8,7 +8,17 @@ import { Grid2 } from '@mui/material';
 
 
 
-const LAMBDA_API_URI = import.meta.env.VITE_LAMBDA_API_URI
+const LAMBDA_API__BASE_URI = import.meta.env.VITE_LAMBDA_API_BASE_URI
+const LAMBDA_APP_DATABASE_NAME = import.meta.env.VITE_LAMBDA_APP_DATABASE_NAME
+const user_name = "roman"
+
+const dummy_data = [
+    {"creator": "roman", "name": "yolo"},
+    {"creator": "roman", "name": "dodo"},
+    {"creator": "roman", "name": "carto"},
+    {"creator": "roman", "name": "zouz"},
+    {"creator": "john", "name": "roman"},
+]
 
 interface Dataset {
     creator: string;
@@ -23,7 +33,7 @@ function DatabaseList() {
     
     useEffect(() => {
         setIsLoading(true);
-        fetch(LAMBDA_API_URI + '/roman', {
+        fetch(LAMBDA_API__BASE_URI + LAMBDA_APP_DATABASE_NAME + '/' + user_name, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -37,13 +47,7 @@ function DatabaseList() {
         })
         .catch((err) => {
             console.error(err.message);
-            setDatabases([
-                {"creator": "roman", "name": "yolo"},
-                {"creator": "roman", "name": "dodo"},
-                {"creator": "roman", "name": "carto"},
-                {"creator": "roman", "name": "zouz"},
-                {"creator": "john", "name": "roman"},
-            ])
+            setDatabases(dummy_data)
             setIsLoading(false); // Hide loading screen
         });
         return () => {
@@ -55,7 +59,7 @@ function DatabaseList() {
         <>
             <h1>Database List</h1>
             {/* {databases.length > 0 ? ( */}
-            {databases.length < 0 ? (
+            {databases.length > 0 ? (
                 <Grid2 container spacing={2} padding={2}>
                     {databases.map((database: any, index: any) => (
                     <Grid2 key={index} size={4}>

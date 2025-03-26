@@ -12,6 +12,10 @@ import Home from './components/Home/Home';
 import Dataset from './components/Dataset/Dataset';
 import Database from './components/Database/Database';
 import DatasetList from './components/Dataset/DatasetList';
+import RegisterDatabase2 from './components/Database/RegisterDatabase/RegisterDatabase';
+import Enrichment from './components/Enrichment/Enrichment';
+
+
 
 function App() {
   return (
@@ -41,9 +45,12 @@ function App() {
         <Route path="/counters/:id" element={<Counter />} /> {/* Counter page route */}
         <Route path="/database/register" element={<RegisterDatabase />} /> {/* CreateDataset page route */}
         <Route path="/database/:databaseid" element={<DatasetList />} /> {/* CreateDataset page route */}
-        <Route path="/database/:databaseid/datasets/:datasetId" element={<Dataset />} /> {/* CreateDataset page route */}
+        <Route path="/datasets/:datasetId" element={<Dataset />} /> {/* CreateDataset page route */}
+        <Route path="/datasets/:datasetId/edit" element={<Dataset />} /> {/* CreateDataset page route */}
         <Route path="/database/:databaseid/create-dataset" element={<CreateDataset />} /> {/* CreateDataset page route */}
         <Route path="/databases" element={<DatabaseList />} /> {/* CreateDataset page route */}
+        <Route path="/test" element={<RegisterDatabase2 />} /> {/* CreateDataset page route */}
+        <Route path="/enrich" element={<Enrichment />} /> {/* CreateDataset page route */}
       </Routes>
     </Router>
     </Container>
