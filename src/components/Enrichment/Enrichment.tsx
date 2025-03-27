@@ -54,7 +54,7 @@ function Enrichment() {
   };
 
   return (
-    <div className="p-4">
+    <>
       <Table striped>
         <thead>
           <tr>
@@ -95,7 +95,7 @@ function Enrichment() {
           <Button color="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
         </ModalFooter>
       </Modal>
-    </div>
+    </>
   );
 }
 
