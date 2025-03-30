@@ -53,8 +53,6 @@ function App() {
         </div>
 
         {/* Main Content (pushes footer down) */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <Container style={{ flex: 1, marginTop: "20px" }}>
             <Routes>
               <Route path="/" element={<DatabaseList />} />
               <Route path="/counters/:id" element={<Counter />} />
@@ -67,23 +65,8 @@ function App() {
               <Route path="/test" element={<RegisterDatabase2 />} />
               <Route path="/enrich" element={<Enrichment />} />
             </Routes>
-          </Container>
-        </div>
 
-        {/* Sticky Footer */}
-        <footer
-          style={{
-            position: "sticky",
-            bottom: 0,
-            width: "100%",
-            backgroundColor: "#343a40", // Dark theme
-            color: "white",
-            textAlign: "center",
-            padding: "1rem 0",
-          }}
-        >
-          © 2025 My Website - All Rights Reserved
-        </footer>
+
       </div>
     </Router>
   )
