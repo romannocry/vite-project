@@ -6,6 +6,7 @@ import { AgGridReact } from "ag-grid-react";//import "ag-grid-community/styles/a
 //import "ag-grid-community/styles/ag-theme-alpine-dark.css"; // Dark Theme
 import { colorSchemeDark } from 'ag-grid-community';
 import { ClientSideRowModelModule } from "ag-grid-community"; // Required for basic functionality
+import { MdEdit } from "react-icons/md";
 
 
 const LAMBDA_API__BASE_URI = import.meta.env.VITE_LAMBDA_API_BASE_URI
@@ -189,16 +190,6 @@ function Enrichment() {
 
     // Column Definitions: Defines & controls grid columns.
     const [colDefs, setColDefs] = useState<ColDef<DataItem>[]>([
-        { field: "id", filter: "agTextColumnFilter" },
-        { field: "content", filter: "agTextColumnFilter" },
-        { field: "title", filter: "agTextColumnFilter" },
-        {
-            headerName: "Enrichment",
-            field: "enrichment",
-            valueGetter: (params) => JSON.stringify(params.data?.enrichment), // Convert the enrichment object to a JSON string
-            sortable: true,
-            filter: "agTextColumnFilter",
-        },
         {
             headerName: "Action",
             field: "action",
@@ -209,19 +200,29 @@ function Enrichment() {
                             backgroundColor: "white", // Matches Alpine Dark
                             color: "#3A4D63",
                             border: "1px solid #3A4D63",
-                            padding: "2px 10px",
+                            padding: "0px 5px",
                             borderRadius: "0px",
                             cursor: "pointer",
                             transition: "0.2s",
                         }}
                         color="primary" onClick={() => openModal(params.data)}>
-                        Enrichment
+                        <MdEdit />Enrichment
                     </Button>
                 );
             },
             width: 150,
             sortable: false,
             filter: false,
+        },
+        { field: "id", filter: "agTextColumnFilter" },
+        { field: "content", filter: "agTextColumnFilter" },
+        { field: "title", filter: "agTextColumnFilter" },
+        {
+            headerName: "Enrichment",
+            field: "enrichment",
+            valueGetter: (params) => JSON.stringify(params.data?.enrichment), // Convert the enrichment object to a JSON string
+            sortable: true,
+            filter: "agTextColumnFilter",
         },
     ]);
 
@@ -252,10 +253,28 @@ function Enrichment() {
                         paginationPageSize={100}
                         rowData={filteredData}
                         enableCellTextSelection={true} // Allows selecting cell text for copy-pasting
-                        defaultColDef={{ editable: true }} // Allows editing before copy-pasting
+                        defaultColDef={{ editable: true , resizable: true}} // Allows editing before copy-pasting
                         columnDefs={colDefs}
                         suppressHorizontalScroll={false} // Ensures smooth scrolling
                         suppressMovableColumns={true} // Prevents column drag
+                        rowHeight={35} // Minimum reasonable height
+                        headerHeight={25} // Compact header
+                        // sideBar={{
+                        //     toolPanels: [
+                        //         {
+                        //             id: "columns",
+                        //             labelDefault: "Columns",
+                        //             labelKey: "columns",
+                        //             iconKey: "columns",
+                        //             toolPanel: "agColumnsToolPanel",
+                        //             toolPanelParams: {
+                        //                 suppressRowGroups: true,
+                        //                 suppressValues: true,
+                        //                 suppressPivots: true,
+                        //             },
+                        //         },
+                        //     ],
+                        // }}
                     />
                 </div>
             </div>
