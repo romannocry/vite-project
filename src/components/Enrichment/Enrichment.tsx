@@ -1,17 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter, Table, Input, Container } from "reactstrap";
 import type { ColDef } from "ag-grid-community";
-import { AllCommunityModule, ModuleRegistry, themeAlpine} from "ag-grid-community";
+import { AllCommunityModule, ModuleRegistry, themeAlpine, themeQuartz} from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";//import "ag-grid-community/styles/ag-grid.css";
 //import "ag-grid-community/styles/ag-theme-alpine-dark.css"; // Dark Theme
 import { colorSchemeDark } from 'ag-grid-community';
 import { ClientSideRowModelModule } from "ag-grid-community"; // Required for basic functionality
 import { MdEdit } from "react-icons/md";
+import styles from './InventoryExample.module.css'; // Import the CSS Module
 
 
 const LAMBDA_API__BASE_URI = import.meta.env.VITE_LAMBDA_API_BASE_URI
 const LAMBDA_APP_DATABASE_NAME = import.meta.env.VITE_LAMBDA_APP_DATABASE_NAME
-const myTheme = themeAlpine.withPart(colorSchemeDark);
+//const myTheme = themeAlpine.withPart(colorSchemeDark);
+const myTheme = themeQuartz
 
 // Register all Community features
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -190,6 +192,7 @@ function Enrichment() {
 
     // Column Definitions: Defines & controls grid columns.
     const [colDefs, setColDefs] = useState<ColDef<DataItem>[]>([
+        { headerCheckboxSelection: true, checkboxSelection: true, width:30},  // Add checkboxes in header and rows
         {
             headerName: "Action",
             field: "action",
@@ -214,7 +217,7 @@ function Enrichment() {
             sortable: false,
             filter: false,
         },
-        { field: "id", filter: "agTextColumnFilter" },
+        { field: "id", filter: "agTextColumnFilter", width:100 },
         { field: "content", filter: "agTextColumnFilter" },
         { field: "title", filter: "agTextColumnFilter" },
         {
@@ -247,9 +250,11 @@ function Enrichment() {
 
             <div style={{ height: "65vh", width: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 <div style={{ flexGrow: 1, overflowY: "auto" }}>
+                    
                     <AgGridReact
                         theme={myTheme}
                         pagination={true}
+                        rowSelection = {"multiple"} // Allow multiple row selection
                         paginationPageSize={100}
                         rowData={filteredData}
                         enableCellTextSelection={true} // Allows selecting cell text for copy-pasting
