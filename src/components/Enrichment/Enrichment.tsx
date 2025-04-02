@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback} from "react";
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter, Table, Input, Container } from "reactstrap";
 import type { ColDef } from "ag-grid-community";
 import { AllCommunityModule, ModuleRegistry, themeAlpine, themeQuartz} from "ag-grid-community";
@@ -43,6 +43,7 @@ function Enrichment() {
     const [selectedItem, setSelectedItem] = useState<DataItem>();
     const [enrichment, setEnrichment] = useState<Record<string, string>>(enrichment_fields);
     const [searchTerm, setSearchTerm] = useState("");
+    const gridRef = useRef<AgGridReact>(null);
 
     useEffect(() => {
         fetch(LAMBDA_API__BASE_URI + LAMBDA_APP_DATABASE_NAME + '/', {
@@ -221,14 +222,41 @@ function Enrichment() {
         { field: "content", filter: "agTextColumnFilter" },
         { field: "title", filter: "agTextColumnFilter" },
         {
-            headerName: "Enrichment",
             field: "enrichment",
-            valueGetter: (params) => JSON.stringify(params.data?.enrichment), // Convert the enrichment object to a JSON string
-            sortable: true,
-            filter: "agTextColumnFilter",
-        },
+            headerName: "Enrichment",
+            valueGetter: (params) => {
+              const enrichmentData = params.data?.enrichment ?? {}; // Ensure it's always an object
+              return Object.entries(enrichmentData)
+                .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+                .join(", ");
+            },
+          },
     ]);
+    const [activeTab, setActiveTab] = useState("all");
+    const statuses = {
+        all: "All",
+        'JOE': "JOEeee",
+        'this is a test': "On Hold",
+        outOfStock: "Out of Stock",
+      };
 
+      const handleTabClick = useCallback((status: string) => {
+        setActiveTab(status);
+
+        gridRef
+          .current!.api.setColumnFilterModel(
+            "content",
+            {
+                "filterType": "text",
+                "type": "equals",
+                "filter": status === "all" ? null :[status]
+            }
+            
+          )
+          .then(() => gridRef.current!.api.onFilterChanged());
+      }, []);
+
+ 
     //
     return (
         <>
@@ -246,13 +274,25 @@ function Enrichment() {
                     padding: "8px",
                 }}
             />
-
+             <div className={styles.tabs}>
+                    {Object.entries(statuses).map(([key, displayValue]) => (
+                    <button
+                        className={`${styles.tabButton} ${
+                        activeTab === key ? styles.active : ""
+                        }`}
+                        onClick={() => handleTabClick(key)}
+                        key={key}
+                    >
+                        {displayValue}
+                    </button>
+                    ))}
+                </div>
 
             <div style={{ height: "65vh", width: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 <div style={{ flexGrow: 1, overflowY: "auto" }}>
-                    
                     <AgGridReact
                         theme={myTheme}
+                        ref={gridRef}
                         pagination={true}
                         rowSelection = {"multiple"} // Allow multiple row selection
                         paginationPageSize={100}
