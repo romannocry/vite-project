@@ -49,21 +49,22 @@ function Enrichment() {
 
 
   // Generate dynamic enrichment columns
-  const generateEnrichmentColumns = (data: DataItem[]) => {
-    const enrichmentKeys = new Set<string>();
-    data.forEach((item) => {
-      Object.keys(item.enrichment || {}).forEach((key) => enrichmentKeys.add(key));
-    });
-
-    return Array.from(enrichmentKeys).map((key) => ({
-      field: `enrichment.${key}`,
-      headerName: `${key}`,
-      valueGetter: (params: any) => params.data?.enrichment?.[key],
+  const generateEnrichmentColumns = () => {
+    // Convert them into AG Grid column definitions
+    const enrichmentCols: ColDef<DataItem>[] = Object.keys(enrichment_fields).map((key) => ({
+        field: `enrichment.${key}`,
+        headerName: `${key}`,
+        valueGetter: (params) => params.data?.enrichment?.[key],
     }));
+    return enrichmentCols
+
   };
 
   // Create column definitions for AG Grid
   const createColumnDefs = (enrichmentCols: any[]) => [
+
+
+    
     { headerCheckboxSelection: true, checkboxSelection: true, width: 30 },
     {
       headerName: "Action",
@@ -91,7 +92,7 @@ function Enrichment() {
         setData(enrichedData);
         setFilteredData(enrichedData);
         // Create dynamic enrichment columns
-        const enrichmentCols = generateEnrichmentColumns(enrichedData);
+        const enrichmentCols = generateEnrichmentColumns();
         setColDefs(createColumnDefs(enrichmentCols));
       });
 
