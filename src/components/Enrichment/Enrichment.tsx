@@ -44,66 +44,109 @@ function Enrichment() {
     const [enrichment, setEnrichment] = useState<Record<string, string>>(enrichment_fields);
     const [searchTerm, setSearchTerm] = useState("");
     const gridRef = useRef<AgGridReact>(null);
+    const [colDefs, setColDefs] = useState<ColDef<DataItem>[]>([])
 
+
+
+  // Generate dynamic enrichment columns
+  const generateEnrichmentColumns = (data: DataItem[]) => {
+    const enrichmentKeys = new Set<string>();
+    data.forEach((item) => {
+      Object.keys(item.enrichment || {}).forEach((key) => enrichmentKeys.add(key));
+    });
+
+    return Array.from(enrichmentKeys).map((key) => ({
+      field: `enrichment.${key}`,
+      headerName: `${key}`,
+      valueGetter: (params: any) => params.data?.enrichment?.[key],
+    }));
+  };
+
+  // Create column definitions for AG Grid
+  const createColumnDefs = (enrichmentCols: any[]) => [
+    { headerCheckboxSelection: true, checkboxSelection: true, width: 30 },
+    {
+      headerName: "Action",
+      field: "action",
+      cellRenderer: (params: { data: DataItem }) => (
+        <Button onClick={() => openModal(params.data)} style={actionButtonStyle}>
+          <MdEdit /> Enrichment
+        </Button>
+      ),
+      width: 150,
+      sortable: false,
+      filter: false,
+    },
+    { field: "id", filter: "agTextColumnFilter", width: 100 },
+    { field: "title", filter: "agTextColumnFilter" },
+    ...enrichmentCols,
+  ];
+  
     useEffect(() => {
-        fetch(LAMBDA_API__BASE_URI + LAMBDA_APP_DATABASE_NAME + '/', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTc2ODA1MTIsInN1YiI6Ijg2YjM4NTUwLWJlMzMtNGQxYS1hZGQ5LTJjYTk2OGE2YzMyZiJ9.u1VqhlfAZN7Ymz7EMS7N9hnwyKYw38EC9eZVchbVAXU"
-            },
-        })
-            .then((response) => response.json())
-            .then((initial_data: DataItem[]) => {
-                //console.log(data)
-                //setData(data);        // Store original data
-                //setFilteredData(data); // Initialize AG Grid with full dataset
 
-                fetch(LAMBDA_API__BASE_URI + 'tests' + '/', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTc2ODA1MTIsInN1YiI6Ijg2YjM4NTUwLWJlMzMtNGQxYS1hZGQ5LTJjYTk2OGE2YzMyZiJ9.u1VqhlfAZN7Ymz7EMS7N9hnwyKYw38EC9eZVchbVAXU"
-                    },
-                })
-                    .then((response) => response.json())
-                    .then((enrichment_data) => {
-                        //console.log(enrichment_data)
-                        //console.log(initial_data)
-                        
-                        //Sort the enrichment data to take only the latest value (like this we keep historical) 
-                        enrichment_data.sort((a: { created_at: string | number | Date; }, b: { created_at: string | number | Date; }) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-                        // Perform a left join
-                        const joinedData = initial_data.map(item => {
-                            // Find matching enrichment data based on the `id` and `post_id`
-                            const enrichment = enrichment_data.find((enrich: { post_id: string; }) => enrich.post_id === item.id);
-                        
-                            // If a match is found, add enrichment data to the item
-                            if (enrichment) {
-                            return {
-                                ...item,
-                                enrichment: enrichment.enrichment
-                                //enrichment: JSON.stringify(enrichment.enrichment)
-                            };
-                            } else {
-                            // If no match, return item as is
-                            return {
-                                ...item,
-                                enrichment: {}
-                                //enrichment: JSON.stringify(enrichment.enrichment)
-                            };                            }
-                        });
-                        console.log(joinedData)
-                        setData(joinedData);        // Store original data
-                        setFilteredData(joinedData); // Initialize AG Grid with full dataset
-                    });
+    // Fetch initial data
+    fetchData().then(([initialData, enrichmentData]) => {
+        const enrichedData = mergeData(initialData, enrichmentData);
+        setData(enrichedData);
+        setFilteredData(enrichedData);
+        // Create dynamic enrichment columns
+        const enrichmentCols = generateEnrichmentColumns(enrichedData);
+        setColDefs(createColumnDefs(enrichmentCols));
+      });
 
-            })
     }, []);
 
+  // Fetch data from API
+  const fetchData = async () => {
+    const initialData = await fetchApiData(`${LAMBDA_API__BASE_URI}${LAMBDA_APP_DATABASE_NAME}/`);
+    const enrichmentData = await fetchApiData(`${LAMBDA_API__BASE_URI}tests/`);
+    return [initialData, enrichmentData];
+  };
 
+  // Helper function to fetch data
+  const fetchApiData = async (url: string) => {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer `,
+      },
+    });
+    return response.json();
+  };
 
+  // Merge initial data with enrichment data
+  const mergeData = (initialData: DataItem[], enrichmentData: any[]) => {
+    enrichmentData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return initialData.map((item) => {
+      const enrichment = enrichmentData.find((enrich) => enrich.post_id === item.id);
+      return {
+        ...item,
+        enrichment: enrichment ? enrichment.enrichment : {},
+      };
+    });
+  };
+
+  const actionButtonStyle = {
+    backgroundColor: "white",
+    color: "#3A4D63",
+    border: "1px solid #3A4D63",
+    padding: "0px 5px",
+    borderRadius: "0px",
+    cursor: "pointer",
+    transition: "0.2s",
+  };
+
+    const handleDownload = () => {
+        gridRef.current!.api.exportDataAsCsv({
+          onlySelected: false,       // set to true if you want only selected rows
+          allColumns: false,         // set to true if you want all columns (even hidden ones)
+          fileName: 'filtered-data.csv',
+        });
+      };
+    
 
     const handleFilterChange = (searchValue: string) => {
         setSearchTerm(searchValue);
@@ -189,49 +232,8 @@ function Enrichment() {
         filter: true, // Enables filtering for all columns
     };
     
- 
 
-    // Column Definitions: Defines & controls grid columns.
-    const [colDefs, setColDefs] = useState<ColDef<DataItem>[]>([
-        { headerCheckboxSelection: true, checkboxSelection: true, width:30},  // Add checkboxes in header and rows
-        {
-            headerName: "Action",
-            field: "action",
-            cellRenderer: (params: { data: DataItem; }) => {
-                return (
-                    <Button
-                        style={{
-                            backgroundColor: "white", // Matches Alpine Dark
-                            color: "#3A4D63",
-                            border: "1px solid #3A4D63",
-                            padding: "0px 5px",
-                            borderRadius: "0px",
-                            cursor: "pointer",
-                            transition: "0.2s",
-                        }}
-                        color="primary" onClick={() => openModal(params.data)}>
-                        <MdEdit />Enrichment
-                    </Button>
-                );
-            },
-            width: 150,
-            sortable: false,
-            filter: false,
-        },
-        { field: "id", filter: "agTextColumnFilter", width:100 },
-        { field: "content", filter: "agTextColumnFilter" },
-        { field: "title", filter: "agTextColumnFilter" },
-        {
-            field: "enrichment",
-            headerName: "Enrichment",
-            valueGetter: (params) => {
-              const enrichmentData = params.data?.enrichment ?? {}; // Ensure it's always an object
-              return Object.entries(enrichmentData)
-                .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
-                .join(", ");
-            },
-          },
-    ]);
+
     const [activeTab, setActiveTab] = useState("all");
     const statuses = {
         all: "All",
@@ -261,67 +263,35 @@ function Enrichment() {
     return (
         <>
 
-            {/* Search Bar */}
-            <Input
-                type="text"
-                placeholder="Search..."
-                name="searchInput"
-                value={searchTerm}
-                onChange={(e) => handleFilterChange(e.target.value)}
-                style={{
-                    marginBottom: "10px",
-                    maxWidth: "300px",
-                    padding: "8px",
-                }}
-            />
-             <div className={styles.tabs}>
-                    {Object.entries(statuses).map(([key, displayValue]) => (
-                    <button
-                        className={`${styles.tabButton} ${
-                        activeTab === key ? styles.active : ""
-                        }`}
-                        onClick={() => handleTabClick(key)}
-                        key={key}
-                    >
-                        {displayValue}
-                    </button>
-                    ))}
-                </div>
+        <button onClick={() => gridRef.current!.api.exportDataAsCsv({ onlySelected: false })}>
+                Download Filtered Data
+            </button>
+
+            <Input type="text" value={searchTerm} onChange={(e) => handleFilterChange(e.target.value)} />
+
+            <div className={styles.tabs}>
+                {Object.entries(statuses).map(([key, displayValue]) => (
+                <button
+                    key={key}
+                    className={`${styles.tabButton} ${activeTab === key ? styles.active : ""}`}
+                    onClick={() => handleTabClick(key)}
+                >
+                    {displayValue}
+                </button>
+                ))}
+            </div>
 
             <div style={{ height: "65vh", width: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                <div style={{ flexGrow: 1, overflowY: "auto" }}>
-                    <AgGridReact
-                        theme={myTheme}
-                        ref={gridRef}
-                        pagination={true}
-                        rowSelection = {"multiple"} // Allow multiple row selection
-                        paginationPageSize={100}
-                        rowData={filteredData}
-                        enableCellTextSelection={true} // Allows selecting cell text for copy-pasting
-                        defaultColDef={{ editable: true , resizable: true}} // Allows editing before copy-pasting
-                        columnDefs={colDefs}
-                        suppressHorizontalScroll={false} // Ensures smooth scrolling
-                        suppressMovableColumns={true} // Prevents column drag
-                        rowHeight={35} // Minimum reasonable height
-                        headerHeight={25} // Compact header
-                        // sideBar={{
-                        //     toolPanels: [
-                        //         {
-                        //             id: "columns",
-                        //             labelDefault: "Columns",
-                        //             labelKey: "columns",
-                        //             iconKey: "columns",
-                        //             toolPanel: "agColumnsToolPanel",
-                        //             toolPanelParams: {
-                        //                 suppressRowGroups: true,
-                        //                 suppressValues: true,
-                        //                 suppressPivots: true,
-                        //             },
-                        //         },
-                        //     ],
-                        // }}
-                    />
-                </div>
+                <AgGridReact
+                theme={myTheme}
+                ref={gridRef}
+                pagination={true}
+                rowSelection={"single"}
+                paginationPageSize={100}
+                rowData={filteredData}
+                defaultColDef={{ editable: true, resizable: true }}
+                columnDefs={colDefs}
+                />
             </div>
 
             <Modal isOpen={modalOpen} toggle={() => setModalOpen(false)}>
