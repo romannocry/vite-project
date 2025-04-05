@@ -8,10 +8,8 @@ import { colorSchemeDark } from 'ag-grid-community';
 import { ClientSideRowModelModule } from "ag-grid-community"; // Required for basic functionality
 import { MdEdit } from "react-icons/md";
 import styles from './InventoryExample.module.css'; // Import the CSS Module
+import { fetchData } from "../Shared/Api";
 
-
-const LAMBDA_API__BASE_URI = import.meta.env.VITE_LAMBDA_API_BASE_URI
-const LAMBDA_APP_DATABASE_NAME = import.meta.env.VITE_LAMBDA_APP_DATABASE_NAME
 //const myTheme = themeAlpine.withPart(colorSchemeDark);
 const myTheme = themeQuartz
 
@@ -98,24 +96,6 @@ function Enrichment() {
 
     }, []);
 
-  // Fetch data from API
-  const fetchData = async () => {
-    const initialData = await fetchApiData(`${LAMBDA_API__BASE_URI}${LAMBDA_APP_DATABASE_NAME}/`);
-    const enrichmentData = await fetchApiData(`${LAMBDA_API__BASE_URI}tests/`);
-    return [initialData, enrichmentData];
-  };
-
-  // Helper function to fetch data
-  const fetchApiData = async (url: string) => {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer `,
-      },
-    });
-    return response.json();
-  };
 
   // Merge initial data with enrichment data
   const mergeData = (initialData: DataItem[], enrichmentData: any[]) => {
@@ -238,7 +218,7 @@ function Enrichment() {
     const [activeTab, setActiveTab] = useState("all");
     const statuses = {
         all: "All",
-        'JOE': "JOEeee",
+        'this is a roman': "test",
         'this is a test': "On Hold",
         outOfStock: "Out of Stock",
       };
@@ -248,7 +228,7 @@ function Enrichment() {
 
         gridRef
           .current!.api.setColumnFilterModel(
-            "content",
+            "title",
             {
                 "filterType": "text",
                 "type": "equals",
