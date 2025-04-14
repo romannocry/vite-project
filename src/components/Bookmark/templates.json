@@ -1,0 +1,96 @@
+{
+    "templates": [
+      {
+        "id": "template-001",
+        "parent": "4653-3232",
+        "label": "Productivity Hub",
+        "bookmarks": [
+          {
+            "type": "todo",
+            "tags": ["morning", "routine", "focus"],
+            "data": [
+              { "label": "Review today's agenda" },
+              { "label": "Write 3 priorities" },
+              { "label": "Check Slack for updates" },
+              { "label": "Quick inbox scan" },
+              { "label": "Stretch for 5 minutes" }
+            ]
+          },
+          {
+            "type": "link",
+            "tags": ["tools", "dashboard", "work"],
+            "data": [
+              { "label": "https://asana.com" },
+              { "label": "https://notion.so" },
+              { "label": "https://github.com" },
+              { "label": "https://figma.com" },
+              { "label": "https://drive.google.com" }
+            ]
+          },
+          {
+            "type": "link",
+            "tags": ["tools", "dashboard", "work"],
+            "data": [
+              { "label": "https://asana.com" }
+            ]
+          },
+          {
+            "type": "link",
+            "tags": ["tools", "dashboard", "work"],
+            "data": [
+              { "label": "https://asana.com" }
+            ]
+          },
+          {
+            "type": "link",
+            "tags": ["tools", "dashboard", "work"],
+            "data": [
+              { "label": "https://asana.com" }
+            ]
+          },
+          {
+            "type": "link",
+            "tags": ["tools", "dashboard", "work"],
+            "data": [
+              { "label": "https://asana.com" }
+            ]
+          },
+          {
+            "type": "link",
+            "tags": ["tools", "dashboard", "work"],
+            "data": [
+              { "label": "https://asana.com" }
+            ]
+          },
+          {
+            "type": "link",
+            "tags": ["tools", "dashboard", "work"],
+            "data": [
+              { "label": "https://asana.com" }
+            ]
+          },
+          {
+            "type": "contact",
+            "tags": ["team", "collaboration", "weekly"],
+            "data": [
+              { "label": "Emma Thompson - Project Manager" },
+              { "label": "Carlos Rivera - Tech Lead" },
+              { "label": "Linda Wu - Designer" },
+              { "label": "Akash Mehta - QA Analyst" },
+              { "label": "Sara Kim - Marketing" }
+            ]
+          },
+          {
+            "type": "todo",
+            "tags": ["weekly", "review"],
+            "data": [
+              { "label": "Reflect on completed tasks" },
+              { "label": "Set goals for next week" },
+              { "label": "Clean up workspace" },
+              { "label": "Organize notes in Notion" }
+            ]
+          }
+        ]
+      }
+    ]
+  }

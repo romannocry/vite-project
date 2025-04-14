@@ -14,6 +14,7 @@ import Database from './components/Database/Database';
 import DatasetList from './components/Dataset/DatasetList';
 import RegisterDatabase2 from './components/Database/RegisterDatabase/RegisterDatabase';
 import Enrichment from './components/Enrichment/Enrichment';
+import Bookmark from './components/Bookmark/Bookmark';
 import StickyFooter from './components/Footer/Footer';
 
 
@@ -54,8 +55,9 @@ function App() {
 
         {/* Main Content (pushes footer down) */}
             <Routes>
-              <Route path="/" element={<DatabaseList />} />
-              <Route path="/counters/:id" element={<Counter />} />
+            <Route path="/" element={<DatabaseList />} />
+            <Route path="/bookmark" element={<Bookmark />} />
+            <Route path="/counters/:id" element={<Counter />} />
               <Route path="/database/register" element={<RegisterDatabase />} />
               <Route path="/database/:databaseid" element={<DatasetList />} />
               <Route path="/datasets/:datasetId" element={<Dataset />} />

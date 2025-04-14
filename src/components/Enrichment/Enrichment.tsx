@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback} from "react";
-import { Button, Modal, ModalHeader, ModalBody, ModalFooter, Table, Input, Container } from "reactstrap";
+import { Button, Modal, ModalHeader, ModalBody, ModalFooter, Table, Input, Container, InputGroup } from "reactstrap";
 import type { ColDef } from "ag-grid-community";
 import { AllCommunityModule, ModuleRegistry, themeAlpine, themeQuartz} from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";//import "ag-grid-community/styles/ag-grid.css";
@@ -9,6 +9,7 @@ import { ClientSideRowModelModule } from "ag-grid-community"; // Required for ba
 import { MdEdit } from "react-icons/md";
 import styles from './InventoryExample.module.css'; // Import the CSS Module
 import { fetchData } from "../Shared/Api";
+const LAMBDA_API__BASE_URI = import.meta.env.VITE_LAMBDA_API_BASE_URI
 
 //const myTheme = themeAlpine.withPart(colorSchemeDark);
 const myTheme = themeQuartz
@@ -43,7 +44,7 @@ function Enrichment() {
     const [searchTerm, setSearchTerm] = useState("");
     const gridRef = useRef<AgGridReact>(null);
     const [colDefs, setColDefs] = useState<ColDef<DataItem>[]>([])
-
+    const [loading, setLoading] = useState(true);
 
 
   // Generate dynamic enrichment columns
@@ -86,6 +87,7 @@ function Enrichment() {
 
     // Fetch initial data
     fetchData().then(([initialData, enrichmentData]) => {
+        console.log(initialData)
         const enrichedData = mergeData(initialData, enrichmentData);
         setData(enrichedData);
         setFilteredData(enrichedData);
@@ -93,9 +95,19 @@ function Enrichment() {
         const enrichmentCols = generateEnrichmentColumns();
         setColDefs(createColumnDefs(enrichmentCols));
       });
+    setLoading(false)
 
     }, []);
-
+ 
+    const gridOptions = {
+        overlayLoadingTemplate: `
+        <div class-"ag-overlay-loading-center">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+        </div>
+        `,
+        overlayNoRowsTemplate: '<span class="ag-overlay-loading-center">No rows to show</span>',
+    }
 
   // Merge initial data with enrichment data
   const mergeData = (initialData: DataItem[], enrichmentData: any[]) => {
@@ -244,27 +256,38 @@ function Enrichment() {
     return (
         <>
 
-        <button onClick={() => gridRef.current!.api.exportDataAsCsv({ onlySelected: false })}>
-                Download Filtered Data
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <InputGroup style={{width:350}}>
+            <Input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => handleFilterChange(e.target.value)}
+            />
+            <Button onClick={() => gridRef.current!.api.exportDataAsCsv({ onlySelected: false })}>
+            Download Filtered Data
+            </Button>
+        </InputGroup>
+
+        <div className={styles.tabs} style={{ display: 'flex', gap: '8px' }}>
+            {Object.entries(statuses).map(([key, displayValue]) => (
+            <button
+                key={key}
+                className={`${styles.tabButton} ${activeTab === key ? styles.active : ""}`}
+                onClick={() => handleTabClick(key)}
+            >
+                {displayValue}
             </button>
+            ))}
+        </div>
+        </div>
 
-            <Input type="text" value={searchTerm} onChange={(e) => handleFilterChange(e.target.value)} />
 
-            <div className={styles.tabs}>
-                {Object.entries(statuses).map(([key, displayValue]) => (
-                <button
-                    key={key}
-                    className={`${styles.tabButton} ${activeTab === key ? styles.active : ""}`}
-                    onClick={() => handleTabClick(key)}
-                >
-                    {displayValue}
-                </button>
-                ))}
-            </div>
 
             <div style={{ height: "65vh", width: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 <AgGridReact
                 theme={myTheme}
+                gridOptions={gridOptions}
                 ref={gridRef}
                 pagination={true}
                 rowSelection={"single"}
@@ -272,6 +295,11 @@ function Enrichment() {
                 rowData={filteredData}
                 defaultColDef={{ editable: true, resizable: true }}
                 columnDefs={colDefs}
+                suppressHorizontalScroll={false}
+                suppressMovableColumns={true}
+                rowHeight={35}
+                headerHeight={25}
+                loadingOverlayComponent={loading ? 'agOverlayLoading': null}
                 />
             </div>
 
