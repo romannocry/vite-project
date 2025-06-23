@@ -14,8 +14,11 @@ import Database from './components/Database/Database';
 import DatasetList from './components/Dataset/DatasetList';
 import RegisterDatabase2 from './components/Database/RegisterDatabase/RegisterDatabase';
 import Enrichment from './components/Enrichment/Enrichment';
+import ScopingList from './components/Client/ScopingList';
 import Bookmark from './components/Bookmark/Bookmark';
+import Strategy from './components/commercialStrategy/StrategyTable';
 import StickyFooter from './components/Footer/Footer';
+import { InventoryExample } from './components/strategy/InventoryExample';
 
 
 
@@ -29,7 +32,7 @@ function App() {
           minHeight: "100vh", // Makes sure the entire viewport height is used
         }}
       >
-        {/* Header */}
+        {/* Header 
 <Navbar
   color="dark"
   dark
@@ -42,9 +45,9 @@ function App() {
 >
 
           <NavbarBrand href="#">Nav</NavbarBrand>
-        </Navbar>
+        </Navbar>*/}
 
-        {/* Navigation Links */}
+        {/* Navigation Links 
         <div>
           <h1>Navigation</h1>
           <Link to="/databases">List Databases</Link>
@@ -52,6 +55,7 @@ function App() {
           <Link to="/database/register">Register Database</Link>
           <br />
         </div>
+        */}
 
         {/* Main Content (pushes footer down) */}
             <Routes>
@@ -66,6 +70,9 @@ function App() {
               <Route path="/databases" element={<DatabaseList />} />
               <Route path="/test" element={<RegisterDatabase2 />} />
               <Route path="/enrich" element={<Enrichment />} />
+              <Route path="/client" element={<ScopingList/>} />
+              <Route path="/inventory" element={<InventoryExample />} />
+              <Route path="/strategy" element={<Strategy />} />
             </Routes>
 
 
