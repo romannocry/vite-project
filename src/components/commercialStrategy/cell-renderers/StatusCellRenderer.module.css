@@ -1,18 +1,24 @@
 .tag {
-  border-radius: 100px;
+  /*border-radius: 100px;
+  border: 1.5px solid rgba(91, 91, 91, 0.1);
+
+  */
   padding-left: 4px;
   padding-right: 15px;
   line-height: 2;
   font-weight: 500;
-  border: 1.5px solid rgba(91, 91, 91, 0.1);
   display: inline-flex;
   justify-content: center;
   align-items: center;
 }
 
 .activeTag {
+  /*
   background-color: #84ca8130;
+
   border: 1.5px solid rgb(70, 227, 114, 0.2);
+
+  */
 }
 
 .outOfStockTag {
