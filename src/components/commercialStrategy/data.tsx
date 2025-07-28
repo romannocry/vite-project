@@ -21,6 +21,16 @@ export const initialSelectivity: SelectivityItem[] = [
     input_fields: '{}',
   },
   {
+    id: '123',
+    name: 'Jojo',
+    team: '',
+    sub_team: '',
+    selected_by: '',
+    created_on: "2024-06-21T10:32:00.000Z",
+    status: '',
+    input_fields: '{}',
+  },
+  {
     id: '124',
     name: 'Bob',
     team: '',

@@ -18,7 +18,6 @@ import ScopingList from './components/Client/ScopingList';
 import Bookmark from './components/Bookmark/Bookmark';
 import Strategy from './components/commercialStrategy/StrategyTable';
 import StickyFooter from './components/Footer/Footer';
-import { InventoryExample } from './components/strategy/InventoryExample';
 
 
 
@@ -71,7 +70,6 @@ function App() {
               <Route path="/test" element={<RegisterDatabase2 />} />
               <Route path="/enrich" element={<Enrichment />} />
               <Route path="/client" element={<ScopingList/>} />
-              <Route path="/inventory" element={<InventoryExample />} />
               <Route path="/strategy" element={<Strategy />} />
             </Routes>
 
