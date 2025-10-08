@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button, Container, Modal, ModalBody, Input, Row, Col } from 'reactstrap';
 import List from './List';
 import { Element } from './types/element';
@@ -59,14 +59,17 @@ function Home() {
         setIsModalOpen(true);
     }
 
-    const handleEdit = (id: number) => {
-        const el = elements.find(e => e.id === id);
-        if (!el) return;
-        setSelectedElement(el);
-        setNewElementName(el.name);
-        setMode("edit");
-        setIsModalOpen(true);
-    };
+  const handleEdit = useCallback((id: number) => {
+    console.log("Editing element with id:", id);
+    const el = elements.find(e => e.id === id);
+    console.log(el)
+    if (!el) return;
+    setSelectedElement(el);
+    setNewElementName(el.name);
+    setMode("edit");
+    // small delay to ensure state updates propagate before modal opens
+    setTimeout(() => setIsModalOpen(true), 0);
+  }, [elements]);
 
 
 const getRandomNominee = () => {
@@ -94,6 +97,15 @@ const getRandomNominee = () => {
   );
 };
 
+const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+    if (isModalOpen) {
+      // reset form when closing
+      setNewElementName("");
+      setSelectedElement(null);
+    }
+    }
+
 
     const handleApproval = (id: number) => {
         console.log("Approving element with id:", id);
@@ -105,6 +117,11 @@ const getRandomNominee = () => {
         );
         //Store in approval table with timestamp
     }
+
+  const handleDelete = (id: number) => {
+    console.log("Deleting element with id:", id);
+    setElements(prev => prev.filter(el => el.id !== id));
+  }
 
 
   return (
@@ -130,9 +147,9 @@ const getRandomNominee = () => {
 
 
       <hr />
-      <List elements={filtered} onNominate={handleNomination} onEdit={handleEdit} onApprove={handleApproval}/>
+  <List elements={filtered} onNominate={handleNomination} onEdit={handleEdit} onApprove={handleApproval} onDelete={handleDelete} />
 
-      <Modal isOpen={isModalOpen} toggle={() => setIsModalOpen(!isModalOpen)}>
+      <Modal isOpen={isModalOpen} toggle={toggleModal}>
         <ModalBody>
           <h2>{mode == "add" ? 'Add New Element':'Edit Element'}</h2>
           <form onSubmit={handleSubmit}>

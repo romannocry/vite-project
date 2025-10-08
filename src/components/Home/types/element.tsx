@@ -2,6 +2,7 @@ export interface Element{
     id: number; 
     name: string;
     role: string;
+    //created_by?: string;
     created_at?: string; // timestamp
     updated_at?: string; // timestamp
     nominated?: string[];
