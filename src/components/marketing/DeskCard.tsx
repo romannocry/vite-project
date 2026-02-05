@@ -51,6 +51,8 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
 
         // irreversible action: notify parent to add this validator as approved
         const validatorToAdd = activeValidator || undefined
+            // log the certification details
+            console.log("Certify action", { id, items, validator: validatorToAdd })
         onCertify && onCertify(validatorToAdd)
         setShowCertModal(false)
         setEditing(false)

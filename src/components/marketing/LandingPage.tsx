@@ -15,7 +15,6 @@ function LandingPage(){
     const [cards, setCards] = useState<CardModel[]>([])
     const [showCertAllModal, setShowCertAllModal] = useState(false)
     const [activeValidator, setActiveValidator] = useState<string | null>(null)
-    const cardRefs = React.useRef<Map<number, React.RefObject<any>>>(new Map())
 
     // typed validators data
     const typedValidators = validatorsData as { id: number; validators: string[] }[]
@@ -49,35 +48,20 @@ function LandingPage(){
         setShowCertAllModal(false)
     }
 
-    async function confirmCertAll(){
+    function confirmCertAll(){
         if (!activeValidator) return setShowCertAllModal(false)
-
-        // determine which cards should be certified this round
-        const toCertify = cards.filter(c => {
+        setCards(prev => prev.map(c => {
             const validatorsList = validatorsMap.get(c.id) || []
             const approved = c.validators || []
             const next = validatorsList[approved.length]
-            return next === activeValidator
-        }).map(c => c.id)
-
-        // call save on each card's ref before certifying
-        for (const id of toCertify){
-            const r = cardRefs.current.get(id)
-            if (r && r.current && typeof r.current.save === 'function'){
-                try { await r.current.save() } catch(e){ console.error('save failed for', id, e) }
+            if (next === activeValidator) {
+                const nextApproved = [...approved, activeValidator]
+                const isCertified = nextApproved.length >= validatorsList.length
+                    console.log("Certify action (batch)", { id: c.id, items: c.items, validator: activeValidator })
+                    return { ...c, validators: nextApproved, certified: isCertified }
             }
-        }
-
-        // now mark each card as having this validator approved
-        setCards(prev => prev.map(c => {
-            if (!toCertify.includes(c.id)) return c
-            const validatorsList = validatorsMap.get(c.id) || []
-            const approved = c.validators || []
-            const nextApproved = [...approved, activeValidator]
-            const isCertified = nextApproved.length >= validatorsList.length
-            return { ...c, validators: nextApproved, certified: isCertified }
+            return c
         }))
-
         setShowCertAllModal(false)
     }
 
@@ -112,28 +96,21 @@ function LandingPage(){
                     })
                     .map(card => (
                         <div key={card.id} className="mp-card-wrap">
-                            {(() => {
-                                let ref = cardRefs.current.get(card.id)
-                                if (!ref){ ref = React.createRef(); cardRefs.current.set(card.id, ref) }
-                                return (
-                                    <DeskCard
-                                        ref={ref}
-                                        id={card.id}
-                                        initialItems={card.items}
-                                        certified={card.certified}
-                                        // pass approved validators array
-                                        approvedValidators={card.validators || []}
-                                        // pass global validators list for this card
-                                        validatorsList={validatorsMap.get(card.id) || []}
-                                        activeValidator={activeValidator}
-                                        onCertify={(validator?: string) => {
-                                            if (!validator) return
-                                            setCards(prev => prev.map(p => p.id === card.id ? { ...p, validators: [...(p.validators || []), validator], certified: ((p.validators || []).length + 1) >= ((validatorsMap.get(card.id) || []).length) } : p))
-                                        }}
-                                        onRemove={() => removeCard(card.id)}
-                                    />
-                                )
-                            })()}
+                            <DeskCard
+                                id={card.id}
+                                initialItems={card.items}
+                                certified={card.certified}
+                                // pass approved validators array
+                                approvedValidators={card.validators || []}
+                                // pass global validators list for this card
+                                validatorsList={validatorsMap.get(card.id) || []}
+                                activeValidator={activeValidator}
+                                onCertify={(validator?: string) => {
+                                    if (!validator) return
+                                    setCards(prev => prev.map(p => p.id === card.id ? { ...p, validators: [...(p.validators || []), validator], certified: ((p.validators || []).length + 1) >= ((validatorsMap.get(card.id) || []).length) } : p))
+                                }}
+                                onRemove={() => removeCard(card.id)}
+                            />
                         </div>
                     ))}
             </div>
