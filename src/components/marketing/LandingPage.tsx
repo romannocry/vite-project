@@ -44,7 +44,7 @@ function LandingPage(){
         <div className="mp-landing">
             <div className="mp-landing-actions">
                 <button onClick={addCard} className="mp-add-card">+ Add Card</button>
-                <button onClick={openCertAll} className="mp-certify-all">Certify All</button>
+                <button onClick={openCertAll} className="mp-certify-all">Save & Certify All</button>
             </div>
             <div className="mp-cards-grid">
                 {cards.map(card => (

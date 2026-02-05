@@ -34,11 +34,15 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
         setDirty(true)
     }
 
-    function handleSave(){
+    function handleSave(): Promise<void>{
         // Dummy save function — replace with real API call later
         console.log("Saving card", id, items)
-        // simulate save success
-        setTimeout(() => setDirty(false), 200)
+        return new Promise(resolve => {
+            setTimeout(() => {
+                setDirty(false)
+                resolve()
+            }, 200)
+        })
     }
 
     function handleOpenCert(){
@@ -63,9 +67,6 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
             <CardHeader className="mp-card-header">
                 <div>Desk Card #{id}</div>
                 <div className="mp-header-actions">
-                  {dirty && (
-                    <button className="mp-save-btn" onClick={handleSave} title="Save changes">💾 Save</button>
-                  )}
                   <button
                       className="mp-remove-icon"
                       onClick={() => onRemove && onRemove()}
@@ -116,15 +117,19 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
                     ) : (
                         <button
                             className="mp-certify-btn"
-                            onClick={handleOpenCert}
-                            disabled={dirty}
-                            title={dirty ? "Save changes before certifying" : "Certify"}
+                            onClick={async () => {
+                                if (certified) return
+                                if (dirty) await handleSave()
+                                setShowCertModal(true)
+                            }}
+                            disabled={certified}
+                            title={certified ? "Already certified" : dirty ? "Save and then certify" : "Certify"}
                         >
-                            Certify
+                            Save & Certify
                         </button>
                     )}
                 </div>
-                <div className="mp-footer-right">Footer Information</div>
+                <div className="mp-footer-right">xx</div>
             </CardFooter>
 
             {showCertModal && (
