@@ -6,8 +6,9 @@ import { Container, Navbar, NavbarBrand } from 'reactstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Home from './components/Home/Home';
 import StickyFooter from './components/Footer/Footer';
-
-
+import Main from './components/vendor/main';
+import Product from './components/vendor/product';
+import LandingPage from './components/marketing/LandingPage';
 
 function App() {
   return (
@@ -15,8 +16,8 @@ function App() {
       <div className="App d-flex flex-column min-vh-100">
         {/* Main Content (pushes footer down) */}
             <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/home" element={<Home />} />
+            <Route path="/product" element={<Product />} />
+            <Route path="/testing" element={<LandingPage />} />
             <Route path="*" element={<div>404 Not Found</div>} />
             </Routes>
 

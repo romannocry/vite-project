@@ -1,0 +1,32 @@
+.mp-desk-card{margin:12px;padding:0}
+.mp-card-header{display:flex;justify-content:space-between;align-items:center}
+.mp-edit-btn{border:none;background:transparent;cursor:pointer;font-size:18px}
+.mp-edit-btn.active{color:var(--bs-primary,#0d6efd)}
+.mp-inputs.mp-disabled{opacity:0.6}
+.mp-input-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.mp-product-input{flex:1;padding:8px;border:1px solid #ddd;border-radius:4px}
+.mp-remove-btn{background:#f8d7da;border:1px solid #f5c2c7;padding:4px 8px;border-radius:4px;cursor:pointer}
+.mp-add-btn{background:#d1e7dd;border:1px solid #badbcc;padding:6px 10px;border-radius:4px;cursor:pointer}
+.mp-landing{padding:16px}
+.mp-landing-actions{margin-bottom:12px}
+.mp-certify-all{margin-left:8px;background:#0b5ed7;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+.mp-certify-all:hover{opacity:0.95}
+.mp-cards-grid{display:flex;flex-wrap:wrap;gap:12px}
+.mp-card-wrap{width:320px}
+.mp-remove-card{display:none}
+.mp-header-actions{display:flex;gap:8px;align-items:center}
+.mp-remove-icon{border:none;background:transparent;cursor:pointer;font-size:16px;color:#c82333}
+.mp-remove-icon:hover{opacity:0.85}
+.mp-save-btn{background:#0d6efd;color:#fff;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;font-weight:600}
+.mp-save-btn:hover{opacity:0.95}
+.mp-card-footer{display:flex;justify-content:space-between;align-items:center;padding:10px}
+.mp-certify-btn{background:#ffe8a1;border:1px solid #ffd27a;padding:6px 10px;border-radius:4px;cursor:pointer}
+.mp-certified-badge{display:inline-flex;gap:8px;align-items:center;background:#e6f4ea;color:#0f5132;padding:6px 10px;border-radius:20px;font-weight:700}
+.mp-save-required{color:#856404;background:#fff3cd;border:1px solid #ffeeba;padding:6px 10px;border-radius:6px}
+.mp-certify-btn:disabled{opacity:0.5;cursor:not-allowed;background:#f0e6b8;border-color:#eddc9a}
+.mp-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:2000}
+.mp-modal{background:#fff;padding:20px;border-radius:8px;max-width:420px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.15)}
+.mp-modal h3{margin-top:0}
+.mp-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.mp-modal-cancel{background:#f8f9fa;border:1px solid #e0e0e0;padding:8px 12px;border-radius:6px}
+.mp-modal-confirm{background:#d1e7dd;border:1px solid #badbcc;padding:8px 12px;border-radius:6px}

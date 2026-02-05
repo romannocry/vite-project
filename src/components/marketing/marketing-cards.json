@@ -1,0 +1,8 @@
+[
+  { "id": 1, "items": ["Product A", "Product B"] },
+  { "id": 2, "items": ["Desk Lamp"] },
+  { "id": 3, "items": ["Mouse", "Keyboard", "Monitor"] },
+  { "id": 4, "items": ["Desk Lamp"] },
+  { "id": 5, "items": ["Desk Lamp"] }
+
+]
