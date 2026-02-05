@@ -37,27 +37,22 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
         setDirty(true)
     }
 
-    function handleSave(): Promise<void>{
-        // Dummy save function — replace with real API call later
-        console.log("Saving card", id, items)
-        return new Promise(resolve => {
-            setTimeout(() => {
-                setDirty(false)
-                resolve()
-            }, 200)
-        })
-    }
-
     function handleOpenCert(){
         setShowCertModal(true)
     }
 
-    function handleConfirmCert(){
+    async function handleConfirmCert(){
+        // perform save here (dummy) before certifying
+        if (dirty){
+            console.log("Saving card before certify", id, items)
+            await new Promise(resolve => setTimeout(resolve, 200))
+            setDirty(false)
+        }
+
         // irreversible action: notify parent to add this validator as approved
         const validatorToAdd = activeValidator || undefined
         onCertify && onCertify(validatorToAdd)
         setShowCertModal(false)
-        setDirty(false)
         setEditing(false)
         console.log("Card certified", id)
     }
@@ -138,8 +133,7 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
                             return (
                                 <button
                                     className="mp-certify-btn"
-                                    onClick={async () => {
-                                        if (dirty) await handleSave()
+                                    onClick={() => {
                                         setShowCertModal(true)
                                     }}
                                     title={dirty ? "Save and then certify" : "Certify"}
