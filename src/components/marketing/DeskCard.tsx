@@ -8,10 +8,13 @@ type Props = {
   initialItems?: string[]
     onRemove?: () => void
     certified?: boolean
-    onCertify?: () => void
+    onCertify?: (validator?: string) => void
+    validatorsList?: string[]
+    approvedValidators?: string[]
+    activeValidator?: string | null
 }
 
-function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, onCertify }: Props){
+function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, onCertify, validatorsList = [], approvedValidators = [], activeValidator }: Props){
     const [editing, setEditing] = useState(false)
     const [items, setItems] = useState<string[]>(initialItems)
     const [dirty, setDirty] = useState(false)
@@ -50,8 +53,9 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
     }
 
     function handleConfirmCert(){
-        // irreversible action: notify parent to mark certified and lock edits
-        onCertify && onCertify()
+        // irreversible action: notify parent to add this validator as approved
+        const validatorToAdd = activeValidator || undefined
+        onCertify && onCertify(validatorToAdd)
         setShowCertModal(false)
         setDirty(false)
         setEditing(false)
@@ -112,24 +116,49 @@ function DeskCard({ id = 1, initialItems = [""], onRemove, certified = false, on
             </CardBody>
             <CardFooter className={`mp-card-footer ${certified ? "mp-certified" : ""}`}>
                 <div className="mp-footer-left">
-                    {certified ? (
-                        <div className="mp-certified-badge">✅ Certified</div>
-                    ) : (
-                        <button
-                            className="mp-certify-btn"
-                            onClick={async () => {
-                                if (certified) return
-                                if (dirty) await handleSave()
-                                setShowCertModal(true)
-                            }}
-                            disabled={certified}
-                            title={certified ? "Already certified" : dirty ? "Save and then certify" : "Certify"}
-                        >
-                            Save & Certify
-                        </button>
-                    )}
+                    {(() => {
+                        const approved = approvedValidators || []
+                        const total = (validatorsList || []).length
+                        const approvedCount = approved.length
+
+                        if (total > 0 && approvedCount >= total) {
+                            return <div className="mp-certified-badge">✅ Certified</div>
+                        }
+
+                        // Determine next required validator for this card
+                        const nextValidator = validatorsList[approvedCount]
+
+                        // If all approved, show overall Certified
+                        if (approvedCount >= total && total > 0) {
+                            return <div className="mp-certified-badge">✅ Certified</div>
+                        }
+
+                        // If active validator is exactly the next required approver, show Certify button
+                        if (activeValidator && nextValidator === activeValidator) {
+                            return (
+                                <button
+                                    className="mp-certify-btn"
+                                    onClick={async () => {
+                                        if (dirty) await handleSave()
+                                        setShowCertModal(true)
+                                    }}
+                                    title={dirty ? "Save and then certify" : "Certify"}
+                                >
+                                    Certify
+                                </button>
+                            )
+                        }
+
+                        // If the active validator already approved, show their chip
+                        if (activeValidator && approved.includes(activeValidator)) {
+                            return <span className={`mp-approval-chip mp-approval-chip-me`}>✅ {activeValidator}</span>
+                        }
+
+                        // Otherwise hide the control (not their turn)
+                        return null
+                    })()}
                 </div>
-                <div className="mp-footer-right">xx</div>
+                <div className="mp-footer-right">Footer Information</div>
             </CardFooter>
 
             {showCertModal && (

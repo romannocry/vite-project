@@ -23,6 +23,9 @@
 .mp-card-footer{display:flex;justify-content:space-between;align-items:center;padding:10px}
 .mp-certify-btn{background:#ffe8a1;border:1px solid #ffd27a;padding:6px 10px;border-radius:4px;cursor:pointer}
 .mp-certified-badge{display:inline-flex;gap:8px;align-items:center;background:#e6f4ea;color:#0f5132;padding:6px 10px;border-radius:20px;font-weight:700}
+.mp-approved-badge{display:inline-flex;gap:8px;align-items:center;background:#eef7ff;color:#084298;padding:6px 10px;border-radius:14px;font-weight:600}
+.mp-approval-chip{display:inline-flex;gap:6px;align-items:center;background:#f1f5f9;color:#0f172a;padding:6px 8px;border-radius:12px;font-weight:600;border:1px solid #e2e8f0}
+.mp-approval-chip-me{background:#d1e7dd;color:#0f5132;border-color:#badbcc}
 .mp-save-required{color:#856404;background:#fff3cd;border:1px solid #ffeeba;padding:6px 10px;border-radius:6px}
 .mp-certify-btn:disabled{opacity:0.5;cursor:not-allowed;background:#f0e6b8;border-color:#eddc9a}
 .mp-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:2000}

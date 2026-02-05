@@ -1,6 +1,6 @@
 [
   { "id": 1, "validators": ["validator1", "validator2", "validator3"] },
-  { "id": 2, "validators": ["validator1", "validator2", "validator3"] },
+  { "id": 2, "validators": ["validator2", "validator3","validator4"] },
   { "id": 3, "validators": ["validator1", "validator2", "validator3"] },
   { "id": 4, "validators": ["validator1", "validator2", "validator3"] },
   { "id": 5, "validators": ["validator1", "validator2", "validator3"] }

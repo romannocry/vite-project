@@ -1,8 +1,8 @@
 [
-  { "id": 1, "items": ["Product A", "Product B"], "validators": ["validator1"] },
+  { "id": 1, "items": ["Product A", "Product B"], "validators": [] },
   { "id": 2, "items": ["Desk Lamp"], "validators": [] },
-  { "id": 3, "items": ["Mouse", "Keyboard", "Monitor"], "validators": ["validator1", "validator2"] },
+  { "id": 3, "items": ["Mouse", "Keyboard", "Monitor"], "validators": [] },
   { "id": 4, "items": ["Desk Lamp"], "validators": [] },
-  { "id": 5, "items": ["Desk Lamp"], "validators": ["validator1", "validator2"] }
+  { "id": 5, "items": ["Desk Lamp"], "validators": [] }
 
 ]
