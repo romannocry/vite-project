@@ -27,6 +27,41 @@ export const formatDateLocal = (d: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+export const formatCreatedAtLocal = (d: Date) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  const ms = String(d.getMilliseconds()).padStart(3, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}.${ms}`;
+};
+
+export const parseCreatedAtLocal = (createdAt: string) => {
+  // Expected: "YYYY-MM-DD HH:mm:ss.SSS" (no timezone). Parse as local time.
+  const s = (createdAt ?? "").trim();
+  if (!s) return new Date(NaN);
+
+  const m =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?$/.exec(s);
+  if (m) {
+    const year = Number(m[1]);
+    const month0 = Number(m[2]) - 1;
+    const day = Number(m[3]);
+    const hour = Number(m[4] ?? 0);
+    const minute = Number(m[5] ?? 0);
+    const second = Number(m[6] ?? 0);
+    const msRaw = m[7] ?? "0";
+    const ms = Number(msRaw.padEnd(3, "0").slice(0, 3));
+    return new Date(year, month0, day, hour, minute, second, ms);
+  }
+
+  // Fallback: try to coerce "YYYY-MM-DD HH:mm:ss.SSS" → ISO-like "YYYY-MM-DDTHH:mm:ss.SSS"
+  const coerced = s.includes("T") ? s : s.replace(" ", "T");
+  return new Date(coerced);
+};
+
 export const startOfISOWeekUTC = (d: Date) => {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const day = (date.getUTCDay() + 6) % 7; // Monday=0

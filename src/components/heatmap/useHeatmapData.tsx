@@ -1,17 +1,20 @@
 import { useMemo } from "react";
 import type { RawMeeting } from "./Data";
+import { parseCreatedAtLocal } from "./utils";
 
 export interface InteractionCell {
-  client_id: number;
+  client_id: string;
+  client_name?: string;
   team: string;
   status: RawMeeting["status"];
-  meeting_id: number;
+  id: string;
   date: Date;
   interactionIndex: number;
 }
 
 export interface HeatmapRow {
-  client_id: number;
+  client_id: string;
+  client_name?: string;
   team: string;
   status: string;
   cells: Record<number, InteractionCell>;
@@ -26,10 +29,11 @@ export function useHeatmapData(rawMeetings: RawMeeting[]): HeatmapRow[] {
     const exploded: Omit<InteractionCell, "interactionIndex">[] = rawMeetings.flatMap((m) => {
       const teams = m.participant_team.split(",").map((t) => t.trim()).filter(Boolean);
       return teams.map((team) => ({
-        client_id: m.client_id,
+        client_id: m["iC ID Top Account"],
+        client_name: m.client_name,
         team,
-        meeting_id: m.meeting_id,
-        date: new Date(m.date),
+        id: m.id,
+        date: parseCreatedAtLocal(m.created_at),
         status: m.status,
       }));
     });
@@ -52,7 +56,7 @@ export function useHeatmapData(rawMeetings: RawMeeting[]): HeatmapRow[] {
 
     // 4) Build HeatmapRow objects
     return Object.values(grouped).map((rows) => {
-      const { client_id, team } = rows[0];
+      const { client_id, client_name,team } = rows[0];
 
       const lastNonEmptyStatus = [...rows]
         .reverse()
@@ -67,6 +71,7 @@ export function useHeatmapData(rawMeetings: RawMeeting[]): HeatmapRow[] {
 
       return {
         client_id,
+        client_name,
         team,
         status,
         cells,

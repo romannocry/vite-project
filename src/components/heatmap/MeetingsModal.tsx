@@ -10,7 +10,7 @@ export function MeetingsModal({
   meetings,
   formatDateUTC,
 }: {
-  hovered: { client_id: number; team: string; weekKey: string };
+  hovered: { client_id: string; team: string; weekKey: string };
   onClose: () => void;
   comments: string[];
   interactions: InteractionCell[];
@@ -49,9 +49,9 @@ export function MeetingsModal({
 
       <ul>
         {interactions.map((c) => {
-          const raw = meetings.find((m) => m.meeting_id === c.meeting_id);
+          const raw = meetings.find((m) => m.id === c.id);
           return (
-            <li key={c.meeting_id}>{`${formatDateUTC(c.date)} — #${c.meeting_id} — ${raw?.participant_team ?? ""}`}</li>
+            <li key={c.id}>{`${formatDateUTC(c.date)} — #${c.id} — ${raw?.participant_team ?? ""}`}</li>
           );
         })}
       </ul>

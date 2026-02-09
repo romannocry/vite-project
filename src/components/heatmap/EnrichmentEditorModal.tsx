@@ -1,5 +1,5 @@
 import type { Enrichment } from "./Data";
-import type { OverlayEditorState, OverlayStatus } from "./heatmapUiTypes";
+import type { OverlayEditorState, OverlayFeeling, OverlayStatus } from "./heatmapUiTypes";
 import { Modal } from "./Modal";
 
 export function EnrichmentEditorModal({
@@ -8,6 +8,7 @@ export function EnrichmentEditorModal({
   curWK,
   existingComments,
   onChangeStatus,
+  onChangeFeeling,
   onChangeNewComment,
   onSave,
 }: {
@@ -16,6 +17,7 @@ export function EnrichmentEditorModal({
   curWK: string;
   existingComments: string[];
   onChangeStatus: (s: OverlayStatus) => void;
+  onChangeFeeling: (f: OverlayFeeling) => void;
   onChangeNewComment: (v: string) => void;
   onSave: () => void;
 }) {
@@ -72,6 +74,20 @@ export function EnrichmentEditorModal({
         </label>
 
         <label style={{ display: "grid", gap: 6 }}>
+          <span style={{ fontSize: 12, color: "#444" }}>Feeling</span>
+          <select
+            value={overlayEditor.feeling}
+            onChange={(e) => onChangeFeeling(e.target.value as OverlayFeeling)}
+            style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #ddd" }}
+          >
+            <option value="">—</option>
+            <option value="positive">positive</option>
+            <option value="neutral">neutral</option>
+            <option value="negative">negative</option>
+          </select>
+        </label>
+
+        <label style={{ display: "grid", gap: 6 }}>
           <span style={{ fontSize: 12, color: "#444" }}>Week comment</span>
           <textarea
             value={overlayEditor.newComment}
@@ -118,4 +134,8 @@ export function EnrichmentEditorModal({
 
 export function statusToStore(status: OverlayStatus): Enrichment["status"] {
   return status === "ongoing" ? "" : (status as Enrichment["status"]);
+}
+
+export function feelingToStore(feeling: OverlayFeeling): Enrichment["feeling"] {
+  return feeling ? (feeling as Enrichment["feeling"]) : undefined;
 }

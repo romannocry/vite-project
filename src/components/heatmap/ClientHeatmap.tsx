@@ -9,23 +9,36 @@ import { enrichment as initialEnrichment, meetings } from "./Data";
 import type { Enrichment } from "./Data";
 import { useHeatmapData } from "./useHeatmapData";
 import type { InteractionCell } from "./useHeatmapData";
-import { EnrichmentEditorModal, statusToStore } from "./EnrichmentEditorModal";
+import { EnrichmentEditorModal, feelingToStore, statusToStore } from "./EnrichmentEditorModal";
 import { MeetingsModal } from "./MeetingsModal";
 import { SearchExportBar } from "./SearchExportBar";
 import { SinceHeader, WeekHeader } from "./headers";
-import { formatDateLocal, formatDateUTC, formatSinceDays, getISOWeekYear } from "./utils";
-import type { HoveredCellState, OverlayEditorState, OverlayStatus, WeekCellValue } from "./heatmapUiTypes";
+import {
+  formatCreatedAtLocal,
+  formatDateLocal,
+  formatDateUTC,
+  formatSinceDays,
+  getISOWeekYear,
+  parseCreatedAtLocal,
+} from "./utils";
+import type {
+  HoveredCellState,
+  OverlayEditorState,
+  OverlayFeeling,
+  OverlayStatus,
+  WeekCellValue,
+} from "./heatmapUiTypes";
 
 export default function ClientTeamHeatmap() {
   const rows = useHeatmapData(meetings);
 
   const [groupBy, setGroupBy] = useState<"none" | "client" | "team" | "status">("none");
 
-  const rowKeyFrom = (r: { client_id: number; team: string }) => {
+  const rowKeyFrom = (r: { client_id: string; team: string }) => {
     return `${r.client_id}__${r.team}`;
   };
 
-  const rowKeyBaseFrom = (r: { client_id: number; team: string }) => {
+  const rowKeyBaseFrom = (r: { client_id: string; team: string }) => {
     return `${r.client_id}__${r.team}`;
   };
 
@@ -46,7 +59,7 @@ export default function ClientTeamHeatmap() {
   // Use the raw `meetings` dates to compute min/max so every meeting is included
   const weekSequence = useMemo(() => {
     const validDates = meetings
-      .map((m) => new Date(m.date))
+      .map((m) => parseCreatedAtLocal(m.created_at))
       .filter((d) => !isNaN(d.getTime()))
       .map((d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())));
     if (validDates.length === 0) return [] as { key: string; date: Date }[];
@@ -89,24 +102,26 @@ export default function ClientTeamHeatmap() {
 
   const normalizedEnrichment = useMemo(() => {
     const out: Array<{
-      client_id: number;
+      client_id: string;
       team: string;
       date: Date;
       status?: Enrichment["status"];
       comment?: string;
+      feeling?: Enrichment["feeling"];
     }> = [];
 
     for (const e of enrichmentState) {
-      const d = new Date(e.date);
+      const d = parseCreatedAtLocal(e.created_at);
       if (isNaN(d.getTime())) continue;
       const teams = e.participant_team.split(",").map((t) => t.trim()).filter(Boolean);
       for (const team of teams) {
         out.push({
-          client_id: e.client_id,
+          client_id: e["iC ID Top Account"],
           team,
           date: d,
           status: e.status,
           comment: e.comment,
+          feeling: e.feeling,
         });
       }
     }
@@ -184,6 +199,24 @@ export default function ClientTeamHeatmap() {
     return Object.fromEntries(Object.entries(best).map(([rk, v]) => [rk, v.comment]));
   }, [normalizedEnrichment]);
 
+  const feelingByRowKey = useMemo(() => {
+    const best: Record<string, { ts: number; idx: number; feeling: NonNullable<Enrichment["feeling"]> }> = {};
+
+    normalizedEnrichment.forEach((e, idx) => {
+      const f = typeof e.feeling === "string" ? e.feeling.trim() : "";
+      if (!f) return;
+      const rk = rowKeyBaseFrom({ client_id: e.client_id, team: e.team });
+      const ts = e.date.getTime();
+
+      const prev = best[rk];
+      if (!prev || ts > prev.ts || (ts === prev.ts && idx > prev.idx)) {
+        best[rk] = { ts, idx, feeling: f as NonNullable<Enrichment["feeling"]> };
+      }
+    });
+
+    return Object.fromEntries(Object.entries(best).map(([rk, v]) => [rk, v.feeling]));
+  }, [normalizedEnrichment]);
+
   // modal state (click-to-open)
   const [hovered, setHovered] = useState<HoveredCellState>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -191,7 +224,8 @@ export default function ClientTeamHeatmap() {
   const containerStyle = { padding: 20 } as const;
 
   type HeatmapGridRow = {
-    client_id: number;
+    client_id: string;
+    client_name?: string;
     team: string;
     status: string;
     firstMeeting: string;
@@ -229,6 +263,7 @@ export default function ClientTeamHeatmap() {
 
       return {
         client_id: row.client_id,
+        client_name: row.client_name,
         team: row.team,
         status,
         firstMeeting,
@@ -269,6 +304,7 @@ export default function ClientTeamHeatmap() {
               const interactions = params.data.weekMeetings?.[weekKey] ?? [];
               setHovered({
                 client_id: params.data.client_id,
+                client_name: params.data.client_name,
                 team: params.data.team,
                 rowKey: rowKeyBaseFrom({ client_id: params.data.client_id, team: params.data.team }),
                 weekKey,
@@ -335,6 +371,7 @@ export default function ClientTeamHeatmap() {
                 setOverlayEditor({
                   row: { client_id: row.client_id, team: row.team },
                   status: existingStatus,
+                  feeling: (feelingByRowKey[baseKey] ?? "") as OverlayFeeling,
                   newComment: "",
                 });
               }}
@@ -366,6 +403,13 @@ export default function ClientTeamHeatmap() {
         rowGroup: groupBy === "client",
         hide: groupBy === "client",
       },
+      /*{
+        headerName: "Client Name",
+        field: "client_name",
+        pinned: "left",
+        width: 90,
+        enableRowGroup: true
+      },*/
       {
         headerName: "Team",
         field: "team",
@@ -624,6 +668,9 @@ export default function ClientTeamHeatmap() {
           onChangeStatus={(s) =>
             setOverlayEditor((prev) => (prev ? { ...prev, status: s } : prev))
           }
+          onChangeFeeling={(f) =>
+            setOverlayEditor((prev) => (prev ? { ...prev, feeling: f } : prev))
+          }
           onChangeNewComment={(v) =>
             setOverlayEditor((prev) => (prev ? { ...prev, newComment: v } : prev))
           }
@@ -631,20 +678,22 @@ export default function ClientTeamHeatmap() {
             if (!overlayEditor) return;
             const trimmedComment = overlayEditor.newComment.trim();
             const statusStore = statusToStore(overlayEditor.status);
+            const feelingStore = feelingToStore(overlayEditor.feeling);
 
-            if (!trimmedComment && !statusStore) {
-              setOverlayEditor(null);
+            if (!trimmedComment && !statusStore && !feelingStore) {
+              alert("Nothing to save (no status, feeling, or comment)");
               return;
             }
 
             // Use the actual day of entry for correct status ordering.
             // ISO-week bucketing for comments still works (any day in the week maps to the same week).
-            const savedDate = formatDateLocal(new Date());
+            const savedAt = formatCreatedAtLocal(new Date());
             const record: Enrichment = {
-              date: savedDate,
-              client_id: overlayEditor.row.client_id,
+              created_at: savedAt,
+              "iC ID Top Account": overlayEditor.row.client_id,
               participant_team: overlayEditor.row.team,
               status: statusStore,
+              feeling: feelingStore,
               comment: trimmedComment ? overlayEditor.newComment : undefined,
             };
             console.log("Saving enrichment record:", record);
