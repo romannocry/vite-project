@@ -1,0 +1,30 @@
+
+/* Heatmap (AG Grid) */
+.ag-theme-quartz .ag-header-cell.heatmap-current-week {
+	background: #d1fae5;
+}
+
+.ag-theme-quartz .ag-header-cell.heatmap-current-week .ag-header-cell-label {
+	justify-content: center;
+}
+
+/* Heatmap: center all AG Grid header labels */
+.heatmap-grid .ag-header-cell-label,
+.heatmap-grid .ag-header-group-cell-label {
+	justify-content: center;
+}
+
+.heatmap-grid .ag-header-cell-text,
+.heatmap-grid .ag-header-group-text {
+	text-align: center;
+	width: 100%;
+}
+
+/* Custom header components (e.g., week/year header) */
+.heatmap-grid .ag-header-component-wrapper,
+.heatmap-grid .ag-header-group-cell-label .ag-header-component-wrapper {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+}
+

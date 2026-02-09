@@ -8,6 +8,7 @@ import Home from './components/Home/Home';
 import StickyFooter from './components/Footer/Footer';
 import Main from './components/vendor/main';
 import Product from './components/vendor/product';
+import ClientTeamHeatmap from './components/heatmap/ClientHeatmap';
 import LandingPage from './components/marketing/LandingPage';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Routes>
             <Route path="/product" element={<Product />} />
             <Route path="/testing" element={<LandingPage />} />
+            <Route path="/heatmap" element={<ClientTeamHeatmap />} />
             <Route path="*" element={<div>404 Not Found</div>} />
             </Routes>
 
