@@ -1,3 +1,12 @@
+type LegacyRawMeeting = {
+  date: string;
+  meeting_id: number;
+  client_id: number;
+  client_name?: string;
+  participant_team: string;
+  status?: "live" | "on hold" | "abandonned" | "";
+};
+
 export interface RawMeeting {
   created_at: string;
   id: string;
@@ -7,105 +16,122 @@ export interface RawMeeting {
   status?: "live" | "on hold" | "abandonned" | "";
 }
 
-export const meetings: RawMeeting[] = [
+const legacyMeetings: LegacyRawMeeting[] = [
   // 2025 (ISO weeks 01–34)
   // Note: ISO week 01 of 2025 starts on 2024-12-30.
-  { created_at: '2024-12-30 00:00:00.000', id: '5601', "iC ID Top Account": '7001', participant_team: 'Team1' },
-  { created_at: '2025-01-06 00:00:00.000', id: '5602', "iC ID Top Account": '7002', participant_team: 'Team2' },
-  { created_at: '2025-01-13 00:00:00.000', id: '5603', "iC ID Top Account": '7003', participant_team: 'Team3' },
-  { created_at: '2025-01-20 00:00:00.000', id: '5604', "iC ID Top Account": '7004', participant_team: 'Team4' },
-  { created_at: '2025-01-27 00:00:00.000', id: '5605', "iC ID Top Account": '7005', participant_team: 'Team1,Team3' },
-  { created_at: '2025-02-03 00:00:00.000', id: '5606', "iC ID Top Account": '6543', participant_team: 'Team2,Team4' },
-  { created_at: '2025-02-10 00:00:00.000', id: '5607', "iC ID Top Account": '7001', participant_team: 'Team6' },
-  { created_at: '2025-02-17 00:00:00.000', id: '5608', "iC ID Top Account": '7002', participant_team: 'Team7' },
-  { created_at: '2025-02-24 00:00:00.000', id: '5609', "iC ID Top Account": '7003', participant_team: 'Team8' },
-  { created_at: '2025-03-03 00:00:00.000', id: '5610', "iC ID Top Account": '7004', participant_team: 'Team2' },
-  { created_at: '2025-03-10 00:00:00.000', id: '5611', "iC ID Top Account": '7005', participant_team: 'Team3' },
-  { created_at: '2025-03-17 00:00:00.000', id: '5612', "iC ID Top Account": '7001', participant_team: 'Team1' },
-  { created_at: '2025-03-24 00:00:00.000', id: '5613', "iC ID Top Account": '7002', client_name: 'Client Name', participant_team: 'Team4' },
-  { created_at: '2025-03-31 00:00:00.000', id: '5614', "iC ID Top Account": '7003', participant_team: 'Team2,Team3' },
-  { created_at: '2025-04-07 00:00:00.000', id: '5615', "iC ID Top Account": '7004', participant_team: 'Team1,Team4' },
-  { created_at: '2025-04-14 00:00:00.000', id: '5616', "iC ID Top Account": '7005', participant_team: 'Team6' },
-  { created_at: '2025-04-21 00:00:00.000', id: '5617', "iC ID Top Account": '6543', participant_team: 'Team7' },
-  { created_at: '2025-04-28 00:00:00.000', id: '5618', "iC ID Top Account": '7001', participant_team: 'Team8' },
-  { created_at: '2025-05-05 00:00:00.000', id: '5619', "iC ID Top Account": '7002', participant_team: 'Team1,Team2' },
-  { created_at: '2025-05-12 00:00:00.000', id: '5620', "iC ID Top Account": '7003', participant_team: 'Team3,Team4' },
-  { created_at: '2025-05-19 00:00:00.000', id: '5621', "iC ID Top Account": '7004', participant_team: 'Team2' },
-  { created_at: '2025-05-26 00:00:00.000', id: '5622', "iC ID Top Account": '7005', participant_team: 'Team1' },
-  { created_at: '2025-06-02 00:00:00.000', id: '5623', "iC ID Top Account": '7001', participant_team: 'Team3' },
-  { created_at: '2025-06-09 00:00:00.000', id: '5624', "iC ID Top Account": '7002', participant_team: 'Team4' },
-  { created_at: '2025-06-16 00:00:00.000', id: '5625', "iC ID Top Account": '7003', participant_team: 'Team6' },
-  { created_at: '2025-06-23 00:00:00.000', id: '5626', "iC ID Top Account": '7004', participant_team: 'Team7' },
-  { created_at: '2025-06-30 00:00:00.000', id: '5627', "iC ID Top Account": '7005', participant_team: 'Team8' },
-  { created_at: '2025-07-07 00:00:00.000', id: '5628', "iC ID Top Account": '6543', participant_team: 'Team2,Team4' },
-  { created_at: '2025-07-14 00:00:00.000', id: '5629', "iC ID Top Account": '7001', participant_team: 'Team1,Team3' },
-  { created_at: '2025-07-21 00:00:00.000', id: '5630', "iC ID Top Account": '7002', participant_team: 'Team2' },
-  { created_at: '2025-07-28 00:00:00.000', id: '5631', "iC ID Top Account": '7003', participant_team: 'Team3' },
-  { created_at: '2025-08-04 00:00:00.000', id: '5632', "iC ID Top Account": '7004', participant_team: 'Team4' },
-  { created_at: '2025-08-11 00:00:00.000', id: '5633', "iC ID Top Account": '7005', participant_team: 'Team6' },
-  { created_at: '2025-08-18 00:00:00.000', id: '5634', "iC ID Top Account": '7001', participant_team: 'Team7' },
+  { date: '2024-12-30', meeting_id: 5601, client_id: 7001, participant_team: 'Team1' },
+  { date: '2025-01-06', meeting_id: 5602, client_id: 7002, participant_team: 'Team2' },
+  { date: '2025-01-13', meeting_id: 5603, client_id: 7003, participant_team: 'Team3' },
+  { date: '2025-01-20', meeting_id: 5604, client_id: 7004, participant_team: 'Team4' },
+  { date: '2025-01-27', meeting_id: 5605, client_id: 7005, participant_team: 'Team1,Team3'},
+  { date: '2025-02-03', meeting_id: 5606, client_id: 6543, participant_team: 'Team2,Team4' },
+  { date: '2025-02-10', meeting_id: 5607, client_id: 7001, participant_team: 'Team6' },
+  { date: '2025-02-17', meeting_id: 5608, client_id: 7002, participant_team: 'Team7' },
+  { date: '2025-02-24', meeting_id: 5609, client_id: 7003, participant_team: 'Team8' },
+  { date: '2025-03-03', meeting_id: 5610, client_id: 7004, participant_team: 'Team2' },
+  { date: '2025-03-10', meeting_id: 5611, client_id: 7005, participant_team: 'Team3' },
+  { date: '2025-03-17', meeting_id: 5612, client_id: 7001, participant_team: 'Team1' },
+  { date: '2025-03-24', meeting_id: 5613, client_id: 7002, client_name: 'Client Name', participant_team: 'Team4' },
+  { date: '2025-03-31', meeting_id: 5614, client_id: 7003, participant_team: 'Team2,Team3' },
+  { date: '2025-04-07', meeting_id: 5615, client_id: 7004, participant_team: 'Team1,Team4' },
+  { date: '2025-04-14', meeting_id: 5616, client_id: 7005, participant_team: 'Team6' },
+  { date: '2025-04-21', meeting_id: 5617, client_id: 6543, participant_team: 'Team7' },
+  { date: '2025-04-28', meeting_id: 5618, client_id: 7001, participant_team: 'Team8' },
+  { date: '2025-05-05', meeting_id: 5619, client_id: 7002, participant_team: 'Team1,Team2' },
+  { date: '2025-05-12', meeting_id: 5620, client_id: 7003, participant_team: 'Team3,Team4' },
+  { date: '2025-05-19', meeting_id: 5621, client_id: 7004, participant_team: 'Team2' },
+  { date: '2025-05-26', meeting_id: 5622, client_id: 7005, participant_team: 'Team1' },
+  { date: '2025-06-02', meeting_id: 5623, client_id: 7001, participant_team: 'Team3' },
+  { date: '2025-06-09', meeting_id: 5624, client_id: 7002, participant_team: 'Team4' },
+  { date: '2025-06-16', meeting_id: 5625, client_id: 7003, participant_team: 'Team6' },
+  { date: '2025-06-23', meeting_id: 5626, client_id: 7004, participant_team: 'Team7' },
+  { date: '2025-06-30', meeting_id: 5627, client_id: 7005, participant_team: 'Team8' },
+  { date: '2025-07-07', meeting_id: 5628, client_id: 6543, participant_team: 'Team2,Team4' },
+  { date: '2025-07-14', meeting_id: 5629, client_id: 7001, participant_team: 'Team1,Team3' },
+  { date: '2025-07-21', meeting_id: 5630, client_id: 7002, participant_team: 'Team2' },
+  { date: '2025-07-28', meeting_id: 5631, client_id: 7003, participant_team: 'Team3' },
+  { date: '2025-08-04', meeting_id: 5632, client_id: 7004, participant_team: 'Team4' },
+  { date: '2025-08-11', meeting_id: 5633, client_id: 7005, participant_team: 'Team6' },
+  { date: '2025-08-18', meeting_id: 5634, client_id: 7001, participant_team: 'Team7' },
 
   // 2025 (ISO weeks 35–44)
-  { created_at: '2025-08-25 00:00:00.000', id: '5901', "iC ID Top Account": '7001', participant_team: 'Team1' },
-  { created_at: '2025-09-01 00:00:00.000', id: '5902', "iC ID Top Account": '7002', participant_team: 'Team2' },
-  { created_at: '2025-09-08 00:00:00.000', id: '5903', "iC ID Top Account": '7003', participant_team: 'Team3' },
-  { created_at: '2025-09-15 00:00:00.000', id: '5904', "iC ID Top Account": '7004', participant_team: 'Team4' },
-  { created_at: '2025-09-22 00:00:00.000', id: '5905', "iC ID Top Account": '7005', participant_team: 'Team2,Team4' },
-  { created_at: '2025-09-29 00:00:00.000', id: '5906', "iC ID Top Account": '7001', participant_team: 'Team6' },
-  { created_at: '2025-10-06 00:00:00.000', id: '5907', "iC ID Top Account": '7002', participant_team: 'Team7' },
-  { created_at: '2025-10-13 00:00:00.000', id: '5908', "iC ID Top Account": '7003', participant_team: 'Team8' },
-  { created_at: '2025-10-20 00:00:00.000', id: '5909', "iC ID Top Account": '6543', participant_team: 'Team1,Team3' },
-  { created_at: '2025-10-27 00:00:00.000', id: '5910', "iC ID Top Account": '7004', participant_team: 'Team2' },
+  { date: '2025-08-25', meeting_id: 5901, client_id: 7001, participant_team: 'Team1' },
+  { date: '2025-09-01', meeting_id: 5902, client_id: 7002, participant_team: 'Team2' },
+  { date: '2025-09-08', meeting_id: 5903, client_id: 7003, participant_team: 'Team3' },
+  { date: '2025-09-15', meeting_id: 5904, client_id: 7004, participant_team: 'Team4' },
+  { date: '2025-09-22', meeting_id: 5905, client_id: 7005, participant_team: 'Team2,Team4' },
+  { date: '2025-09-29', meeting_id: 5906, client_id: 7001, participant_team: 'Team6' },
+  { date: '2025-10-06', meeting_id: 5907, client_id: 7002, participant_team: 'Team7' },
+  { date: '2025-10-13', meeting_id: 5908, client_id: 7003, participant_team: 'Team8' },
+  { date: '2025-10-20', meeting_id: 5909, client_id: 6543, participant_team: 'Team1,Team3' },
+  { date: '2025-10-27', meeting_id: 5910, client_id: 7004, participant_team: 'Team2' },
 
   // 2025 (ISO weeks 45–52)
-  { created_at: '2025-11-04 00:00:00.000', id: '6001', "iC ID Top Account": '7001', participant_team: 'Team2' },
-  { created_at: '2025-11-12 00:00:00.000', id: '6002', "iC ID Top Account": '7002', participant_team: 'Team4' },
-  { created_at: '2025-11-21 00:00:00.000', id: '6003', "iC ID Top Account": '7003', participant_team: 'Team1,Team3' },
-  { created_at: '2025-12-02 00:00:00.000', id: '6004', "iC ID Top Account": '7001', participant_team: 'Team6' },
-  { created_at: '2025-12-10 00:00:00.000', id: '6005', "iC ID Top Account": '7004', participant_team: 'Team2' },
-  { created_at: '2025-12-18 00:00:00.000', id: '6006', "iC ID Top Account": '7005', participant_team: 'Team3' },
-  { created_at: '2025-12-23 00:00:00.000', id: '6007', "iC ID Top Account": '6543', participant_team: 'Team4' },
-  { created_at: '2025-12-27 00:00:00.000', id: '6008', "iC ID Top Account": '7001', participant_team: 'Team7' },
+  { date: '2025-11-04', meeting_id: 6001, client_id: 7001, participant_team: 'Team2' },
+  { date: '2025-11-12', meeting_id: 6002, client_id: 7002, participant_team: 'Team4' },
+  { date: '2025-11-21', meeting_id: 6003, client_id: 7003, participant_team: 'Team1,Team3' },
+  { date: '2025-12-02', meeting_id: 6004, client_id: 7001, participant_team: 'Team6' },
+  { date: '2025-12-10', meeting_id: 6005, client_id: 7004, participant_team: 'Team2' },
+  { date: '2025-12-18', meeting_id: 6006, client_id: 7005, participant_team: 'Team3' },
+  { date: '2025-12-23', meeting_id: 6007, client_id: 6543, participant_team: 'Team4' },
+  { date: '2025-12-27', meeting_id: 6008, client_id: 7001, participant_team: 'Team7' },
 
   // 2026 (up to current date: 2026-02-07)
-  { created_at: '2026-01-01 00:00:00.000', id: '4343', "iC ID Top Account": '6543', participant_team: 'Team1', status: 'live' },
-  { created_at: '2026-01-01 00:00:00.000', id: '4124', "iC ID Top Account": '6543', participant_team: 'Team4', status: 'live' },
-  { created_at: '2026-02-07 00:00:00.000', id: '1234', "iC ID Top Account": '6543', participant_team: 'Team1,Team2,Team3' },
-  { created_at: '2026-01-05 00:00:00.000', id: '5001', "iC ID Top Account": '7001', participant_team: 'Team2' },
-  { created_at: '2026-01-06 00:00:00.000', id: '5002', "iC ID Top Account": '7002', participant_team: 'Team3' },
-  { created_at: '2026-01-07 00:00:00.000', id: '5003', "iC ID Top Account": '7003', participant_team: 'Team1' },
-  { created_at: '2026-01-08 00:00:00.000', id: '5004', "iC ID Top Account": '7004', participant_team: 'Team2,Team4' },
-  { created_at: '2026-01-09 00:00:00.000', id: '5005', "iC ID Top Account": '7005', participant_team: 'Team3' },
-  { created_at: '2026-01-10 00:00:00.000', id: '5006', "iC ID Top Account": '7001', participant_team: 'Team1' },
-  { created_at: '2026-01-11 00:00:00.000', id: '5007', "iC ID Top Account": '7002', participant_team: 'Team4' },
-  { created_at: '2026-01-12 00:00:00.000', id: '5008', "iC ID Top Account": '7003', participant_team: 'Team2' },
-  { created_at: '2026-01-13 00:00:00.000', id: '5009', "iC ID Top Account": '7004', participant_team: 'Team1,Team3' },
-  { created_at: '2026-01-14 00:00:00.000', id: '5010', "iC ID Top Account": '7005', participant_team: 'Team2' },
-  { created_at: '2026-01-15 00:00:00.000', id: '5011', "iC ID Top Account": '7001', participant_team: 'Team3' },
-  { created_at: '2026-01-16 00:00:00.000', id: '5012', "iC ID Top Account": '7002', participant_team: 'Team1' },
-  { created_at: '2026-01-17 00:00:00.000', id: '5013', "iC ID Top Account": '7003', participant_team: 'Team4' },
-  { created_at: '2026-01-18 00:00:00.000', id: '5014', "iC ID Top Account": '7004', participant_team: 'Team2' },
-  { created_at: '2026-01-19 00:00:00.000', id: '5015', "iC ID Top Account": '7005', participant_team: 'Team1' },
-  { created_at: '2026-01-20 00:00:00.000', id: '5016', "iC ID Top Account": '7001', participant_team: 'Team3' },
-  { created_at: '2026-01-21 00:00:00.000', id: '5017', "iC ID Top Account": '7002', participant_team: 'Team2,Team4' },
-  { created_at: '2026-01-22 00:00:00.000', id: '5018', "iC ID Top Account": '7003', participant_team: 'Team1' },
-  { created_at: '2026-01-23 00:00:00.000', id: '5019', "iC ID Top Account": '7004', participant_team: 'Team3' },
-  { created_at: '2026-01-24 00:00:00.000', id: '5020', "iC ID Top Account": '7005', participant_team: 'Team2' },
-  { created_at: '2026-01-25 00:00:00.000', id: '5021', "iC ID Top Account": '7001', participant_team: 'Team1' },
-  { created_at: '2026-01-26 00:00:00.000', id: '5022', "iC ID Top Account": '7002', participant_team: 'Team4' },
-  { created_at: '2026-01-27 00:00:00.000', id: '5023', "iC ID Top Account": '7003', participant_team: 'Team2' },
-  { created_at: '2026-01-28 00:00:00.000', id: '5024', "iC ID Top Account": '7004', participant_team: 'Team3' },
-  { created_at: '2026-01-29 00:00:00.000', id: '5025', "iC ID Top Account": '7005', participant_team: 'Team1' },
-  { created_at: '2026-01-30 00:00:00.000', id: '5026', "iC ID Top Account": '7001', participant_team: 'Team2,Team3' },
-  { created_at: '2026-01-31 00:00:00.000', id: '5027', "iC ID Top Account": '7002', participant_team: 'Team4' },
-  { created_at: '2026-02-01 00:00:00.000', id: '5034', "iC ID Top Account": '7003', participant_team: 'Team1' },
-  { created_at: '2026-02-02 00:00:00.000', id: '5035', "iC ID Top Account": '7004', participant_team: 'Team2' },
-  { created_at: '2026-02-03 00:00:00.000', id: '5030', "iC ID Top Account": '7005', participant_team: 'Team3' },
-  { created_at: '2026-04-03 00:00:00.000', id: '5030-2', "iC ID Top Account": '7005', participant_team: 'Team0' },
+  { date: '2026-01-01', meeting_id: 4343, client_id: 6543, participant_team: 'Team1', status: 'live' },
+  { date: '2026-01-01', meeting_id: 4124, client_id: 6543, participant_team: 'Team4', status: 'live' },
+  { date: '2026-02-07', meeting_id: 1234, client_id: 6543, participant_team: 'Team1,Team2,Team3' },
+  { date: '2026-01-05', meeting_id: 5001, client_id: 7001, participant_team: 'Team2' },
+  { date: '2026-01-06', meeting_id: 5002, client_id: 7002, participant_team: 'Team3' },
+  { date: '2026-01-07', meeting_id: 5003, client_id: 7003, participant_team: 'Team1' },
+  { date: '2026-01-08', meeting_id: 5004, client_id: 7004, participant_team: 'Team2,Team4' },
+  { date: '2026-01-09', meeting_id: 5005, client_id: 7005, participant_team: 'Team3' },
+  { date: '2026-01-10', meeting_id: 5006, client_id: 7001, participant_team: 'Team1' },
+  { date: '2026-01-11', meeting_id: 5007, client_id: 7002, participant_team: 'Team4' },
+  { date: '2026-01-12', meeting_id: 5008, client_id: 7003, participant_team: 'Team2' },
+  { date: '2026-01-13', meeting_id: 5009, client_id: 7004, participant_team: 'Team1,Team3' },
+  { date: '2026-01-14', meeting_id: 5010, client_id: 7005, participant_team: 'Team2' },
+  { date: '2026-01-15', meeting_id: 5011, client_id: 7001, participant_team: 'Team3' },
+  { date: '2026-01-16', meeting_id: 5012, client_id: 7002, participant_team: 'Team1' },
+  { date: '2026-01-17', meeting_id: 5013, client_id: 7003, participant_team: 'Team4' },
+  { date: '2026-01-18', meeting_id: 5014, client_id: 7004, participant_team: 'Team2' },
+  { date: '2026-01-19', meeting_id: 5015, client_id: 7005, participant_team: 'Team1' },
+  { date: '2026-01-20', meeting_id: 5016, client_id: 7001, participant_team: 'Team3' },
+  { date: '2026-01-21', meeting_id: 5017, client_id: 7002, participant_team: 'Team2,Team4' },
+  { date: '2026-01-22', meeting_id: 5018, client_id: 7003, participant_team: 'Team1' },
+  { date: '2026-01-23', meeting_id: 5019, client_id: 7004, participant_team: 'Team3' },
+  { date: '2026-01-24', meeting_id: 5020, client_id: 7005, participant_team: 'Team2' },
+  { date: '2026-01-25', meeting_id: 5021, client_id: 7001, participant_team: 'Team1' },
+  { date: '2026-01-26', meeting_id: 5022, client_id: 7002, participant_team: 'Team4' },
+  { date: '2026-01-27', meeting_id: 5023, client_id: 7003, participant_team: 'Team2' },
+  { date: '2026-01-28', meeting_id: 5024, client_id: 7004, participant_team: 'Team3' },
+  { date: '2026-01-29', meeting_id: 5025, client_id: 7005, participant_team: 'Team1' },
+  { date: '2026-01-30', meeting_id: 5026, client_id: 7001, participant_team: 'Team2,Team3' },
+  { date: '2026-01-31', meeting_id: 5027, client_id: 7002, participant_team: 'Team4' },
+  { date: '2026-02-01', meeting_id: 5034, client_id: 7003, participant_team: 'Team1' },
+  { date: '2026-02-02', meeting_id: 5035, client_id: 7004, participant_team: 'Team2' },
+  { date: '2026-02-03', meeting_id: 5030, client_id: 7005, participant_team: 'Team3' },
   
 ];
 
+export const meetings: RawMeeting[] = legacyMeetings.map((m) => ({
+  created_at: `${m.date} 00:00:00.000`,
+  id: String(m.meeting_id),
+  "iC ID Top Account": String(m.client_id),
+  client_name: m.client_name,
+  participant_team: m.participant_team,
+  status: m.status,
+}));
+
 export const meetingsExtended: RawMeeting[] = meetings;
+
+type LegacyEnrichment = {
+  date: string;
+  client_id: number;
+  participant_team: string;
+  comment?: string;
+  feeling?: "positive" | "neutral" | "negative";
+  status?: "live" | "on hold" | "abandonned" | "";
+};
 
 export interface Enrichment {
   created_at: string;
@@ -116,19 +142,27 @@ export interface Enrichment {
   status?: "live" | "on hold" | "abandonned" | "";
 }
 
-export const enrichment: Enrichment[] = [
+const legacyEnrichment: LegacyEnrichment[] = [
   // 2025 (ISO weeks 01–34)
   // Note: ISO week 01 of 2025 starts on 2024-12-30.
-  { created_at: '2026-02-02 00:00:00.000', "iC ID Top Account": '7001', participant_team: 'Team1', comment: 'test', status: 'live' },
-  { created_at: '2026-02-03 00:00:00.000', "iC ID Top Account": '7001', participant_team: 'Team1', comment: 'test', status: 'abandonned' },
-  { created_at: '2026-02-02 00:00:00.000', "iC ID Top Account": '7002', participant_team: 'Team4', comment: 'test', status: 'live' },
-  { created_at: '2026-02-02 00:00:00.000', "iC ID Top Account": '7003', participant_team: 'Team2', comment: 'test' },
-  { created_at: '2026-02-02 00:00:00.000', "iC ID Top Account": '7004', participant_team: 'Team2', comment: 'test' },
-  { created_at: '2026-02-02 00:00:00.000', "iC ID Top Account": '7003', participant_team: 'Team8', comment: 'test' },
-  { created_at: '2026-01-14 00:00:00.000', "iC ID Top Account": '7003', participant_team: 'Team8', comment: 'test' },
-  { created_at: '2026-01-14 00:00:00.000', "iC ID Top Account": '6543', participant_team: 'Team4', comment: 'test' },
-  { created_at: '2026-01-14 00:00:00.000', "iC ID Top Account": '6543', participant_team: 'Team4', comment: 'test 2' },
-  { created_at: '2026-01-08 00:00:00.000', "iC ID Top Account": '7001', participant_team: 'Team7', comment: 'test 2', status: '' },
-  { created_at: '2026-03-08 00:00:00.000', "iC ID Top Account": '7001', participant_team: 'Team7', comment: 'test 2', status: 'live' },
-  { created_at: '2026-04-03 00:00:00.000', "iC ID Top Account": '7005', participant_team: 'Team0', comment: 'test 2' },
+  { date: '2026-02-02', client_id: 7001, participant_team: 'Team1', comment: 'test', status: 'live' },
+  { date: '2026-02-03', client_id: 7001, participant_team: 'Team1', comment: 'test', status: 'abandonned' },
+  { date: '2026-02-02', client_id: 7002, participant_team: 'Team4', comment: 'test', status: 'live' },
+  { date: '2026-02-02', client_id: 7003, participant_team: 'Team2', comment: 'test' },
+  { date: '2026-02-02', client_id: 7004, participant_team: 'Team2', comment: 'test' },
+  { date: '2026-02-02', client_id: 7003, participant_team: 'Team8', comment: 'test' },
+  { date: '2026-01-14', client_id: 7003, participant_team: 'Team8', comment: 'test' },
+  { date: '2026-01-14', client_id: 6543, participant_team: 'Team4', comment: 'test' },
+  { date: '2026-01-14', client_id: 6543, participant_team: 'Team4', comment: 'test 2' },
+  { date: '2026-01-08', client_id: 7001, participant_team: 'Team7', comment: 'test 2', status: '' },
+
 ];
+
+export const enrichment: Enrichment[] = legacyEnrichment.map((e) => ({
+  created_at: `${e.date} 00:00:00.000`,
+  "iC ID Top Account": String(e.client_id),
+  participant_team: e.participant_team,
+  comment: e.comment,
+  feeling: e.feeling,
+  status: e.status,
+}));

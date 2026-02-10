@@ -56,12 +56,16 @@ export default function ClientTeamHeatmap() {
   const gridApiRef = useRef<GridApi | null>(null);
 
   // Create a contiguous sequence of ISO-week keys between min and max week
-  // Use the raw `meetings` dates to compute min/max so every meeting is included
+  // Use meetings + enrichment dates so comment-only weeks still render as columns.
   const weekSequence = useMemo(() => {
-    const validDates = meetings
-      .map((m) => parseCreatedAtLocal(m.created_at))
+    const normalizeToUtcDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+
+    const meetingDates = meetings.map((m) => parseCreatedAtLocal(m.created_at));
+    const enrichmentDates = enrichmentState.map((e) => parseCreatedAtLocal(e.created_at));
+
+    const validDates = [...meetingDates, ...enrichmentDates]
       .filter((d) => !isNaN(d.getTime()))
-      .map((d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())));
+      .map(normalizeToUtcDay);
     if (validDates.length === 0) return [] as { key: string; date: Date }[];
     const minDate = new Date(Math.min(...validDates.map((d) => d.getTime())));
     const maxDate = new Date(Math.max(...validDates.map((d) => d.getTime())));
@@ -84,7 +88,7 @@ export default function ClientTeamHeatmap() {
       cur = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth(), cur.getUTCDate() + 7));
     }
     return seq;
-  }, [meetings]);
+  }, [enrichmentState]);
 
   // Show most recent weeks first
   const weekKeys = weekSequence.map((s) => s.key).slice().reverse();
@@ -143,6 +147,18 @@ export default function ClientTeamHeatmap() {
     });
 
     return Object.fromEntries(Object.entries(map).map(([rk, v]) => [rk, v.status]));
+  }, [normalizedEnrichment]);
+
+  const latestEnrichmentTsByRowKey = useMemo(() => {
+    const best: Record<string, number> = {};
+    normalizedEnrichment.forEach((e) => {
+      const rk = rowKeyBaseFrom({ client_id: e.client_id, team: e.team });
+      const ts = e.date.getTime();
+      if (!Number.isFinite(ts)) return;
+      const prev = best[rk];
+      if (prev === undefined || ts > prev) best[rk] = ts;
+    });
+    return best;
   }, [normalizedEnrichment]);
 
   const commentsByCellKey = useMemo(() => {
@@ -258,8 +274,13 @@ export default function ClientTeamHeatmap() {
         ? formatDateUTC(new Date(Math.min(...dates.map((d) => d.getTime()))))
         : "—";
 
-      const last = dates.length ? new Date(Math.max(...dates.map((d) => d.getTime()))) : null;
-      const daysSince = last ? Math.floor((now.getTime() - last.getTime()) / 86400000) : NaN;
+      const lastMeetingTs = dates.length ? Math.max(...dates.map((d) => d.getTime())) : NaN;
+      const lastEnrichmentTs = latestEnrichmentTsByRowKey[baseKey] ?? NaN;
+      const lastUpdateTs = Math.max(
+        Number.isFinite(lastMeetingTs) ? lastMeetingTs : -Infinity,
+        Number.isFinite(lastEnrichmentTs) ? lastEnrichmentTs : -Infinity
+      );
+      const daysSince = Number.isFinite(lastUpdateTs) ? Math.floor((now.getTime() - lastUpdateTs) / 86400000) : NaN;
 
       return {
         client_id: row.client_id,
@@ -272,7 +293,7 @@ export default function ClientTeamHeatmap() {
         weekCounts,
       };
     });
-  }, [rows, weekKeys.length, statusByRowKey]);
+  }, [rows, weekKeys.length, statusByRowKey, latestEnrichmentTsByRowKey]);
 
   const gridRef = useRef<AgGridReact<HeatmapGridRow> | null>(null);
 
@@ -458,14 +479,42 @@ export default function ClientTeamHeatmap() {
           textOverflow: "ellipsis",
         },
       },
-      { headerName: "First meeting", field: "firstMeeting", pinned: "left", width: 140 },
+      {
+        headerName: "First meeting",
+        field: "firstMeeting",
+        pinned: "left",
+        width: 140,
+        comparator: (valueA, valueB) => {
+          const parseTs = (v: unknown) => {
+            if (typeof v !== "string") return Number.POSITIVE_INFINITY;
+            const s = v.trim();
+            if (!s || s === "—") return Number.POSITIVE_INFINITY;
+            const d = new Date(`${s}T00:00:00Z`);
+            const t = d.getTime();
+            return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+          };
+          return parseTs(valueA) - parseTs(valueB);
+        },
+      },
       {
         headerName: "",
-        headerTooltip: "Since last meeting (days)",
+        headerTooltip: "Since last update (days)",
         headerComponent: SinceHeader,
         field: "sinceLastMeeting",
         pinned: "left",
         width: 88,
+        comparator: (valueA, valueB) => {
+          const parseDays = (v: unknown) => {
+            if (typeof v === "number" && Number.isFinite(v)) return v;
+            if (typeof v !== "string") return Number.POSITIVE_INFINITY;
+            const m = v.match(/-?\d+/);
+            if (!m) return Number.POSITIVE_INFINITY;
+            const n = Number(m[0]);
+            return Number.isFinite(n) ? n : Number.POSITIVE_INFINITY;
+          };
+
+          return parseDays(valueA) - parseDays(valueB);
+        },
       },
     ],
     [groupBy, latestCommentByRowKey, rowHasAnyComment, statusByRowKey]
