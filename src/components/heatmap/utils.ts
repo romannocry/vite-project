@@ -62,6 +62,43 @@ export const parseCreatedAtLocal = (createdAt: string) => {
   return new Date(coerced);
 };
 
+export const formatDatetimeLocalInput = (d: Date) => {
+  if (isNaN(d.getTime())) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+};
+
+export const parseDatetimeLocalInput = (value: string) => {
+  const s = (value ?? "").trim();
+  if (!s) return new Date(NaN);
+
+  // Accept "YYYY-MM-DDTHH:mm" (browser datetime-local)
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(s);
+  if (m) {
+    const year = Number(m[1]);
+    const month0 = Number(m[2]) - 1;
+    const day = Number(m[3]);
+    const hour = Number(m[4]);
+    const minute = Number(m[5]);
+    return new Date(year, month0, day, hour, minute, 0, 0);
+  }
+
+  // Accept "YYYY-MM-DD" as midnight local
+  const md = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (md) {
+    const year = Number(md[1]);
+    const month0 = Number(md[2]) - 1;
+    const day = Number(md[3]);
+    return new Date(year, month0, day, 0, 0, 0, 0);
+  }
+
+  return new Date(s);
+};
+
 export const startOfISOWeekUTC = (d: Date) => {
   const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   const day = (date.getUTCDay() + 6) % 7; // Monday=0

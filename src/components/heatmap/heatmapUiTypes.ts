@@ -1,16 +1,23 @@
-import type { Enrichment } from "./Data";
+import type { Enrichment } from "./DataTypes";
 import type { InteractionCell } from "./useHeatmapData";
 
-export type OverlayStatus = "ongoing" | "live" | "on hold" | "abandonned";
+export type OverlayStatus =
+  | "Discussions ongoing"
+  | "onboarding in progress"
+  | "live"
+  | "on hold"
+  | "abandonned";
 
 export type OverlayFeeling = "" | NonNullable<Enrichment["feeling"]>;
 
 export type OverlayEditorState =
   | null
   | {
-      row: { client_id: string; team: string };
+      row: { client_id: string; country: string; team: string };
       status: OverlayStatus;
       feeling: OverlayFeeling;
+      potentialRevenue: string;
+      savedAtDate: string;
       newComment: string;
     };
 

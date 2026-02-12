@@ -5,20 +5,21 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-quartz.css";
 import { FiEdit3 } from "react-icons/fi";
 
-import { enrichment as initialEnrichment, meetings } from "./Data";
-import type { Enrichment } from "./Data";
+import type { Enrichment, RawMeeting } from "./DataTypes";
 import { useHeatmapData } from "./useHeatmapData";
 import type { InteractionCell } from "./useHeatmapData";
 import { EnrichmentEditorModal, feelingToStore, statusToStore } from "./EnrichmentEditorModal";
 import { MeetingsModal } from "./MeetingsModal";
 import { SearchExportBar } from "./SearchExportBar";
 import { SinceHeader, WeekHeader } from "./headers";
+import { loadHeatmapFixtures, postEnrichment } from "./heatmapApi";
 import {
   formatCreatedAtLocal,
   formatDateLocal,
   formatDateUTC,
   formatSinceDays,
   getISOWeekYear,
+  parseDatetimeLocalInput,
   parseCreatedAtLocal,
 } from "./utils";
 import type {
@@ -29,24 +30,70 @@ import type {
   WeekCellValue,
 } from "./heatmapUiTypes";
 
+// Programmatic team exclusions (case-insensitive).
+// Fill this list to remove teams from the grid load.
+// Example: ["team1", "team4"]
+const EXCLUDED_TEAMS: string[] = [];
+
 export default function ClientTeamHeatmap() {
-  const rows = useHeatmapData(meetings);
+  const [rawMeetings, setRawMeetings] = useState<RawMeeting[] | null>(null);
+  const [initialEnrichment, setInitialEnrichment] = useState<Enrichment[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadError(null);
+        const { meetings, enrichment } = await loadHeatmapFixtures();
+        if (cancelled) return;
+        setRawMeetings(meetings);
+        setInitialEnrichment(enrichment);
+      } catch (e) {
+        if (cancelled) return;
+        setLoadError(e instanceof Error ? e.message : String(e));
+        setRawMeetings([]);
+        setInitialEnrichment([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const excludedTeams = EXCLUDED_TEAMS;
+  const isExcludedTeam = (team: string) => excludedTeams.includes(team.trim().toLowerCase());
+
+  const meetingsForGrid = useMemo(() => {
+    const meetings = rawMeetings ?? [];
+    if (!excludedTeams.length) return meetings;
+    return meetings.filter((m) => {
+      const teams = m.participant_team.split(",").map((t) => t.trim()).filter(Boolean);
+      return teams.some((t) => !isExcludedTeam(t));
+    });
+  }, [rawMeetings]);
+
+  const rows = useHeatmapData(meetingsForGrid, { excludedTeams });
 
   const [groupBy, setGroupBy] = useState<"none" | "client" | "team" | "status">("none");
 
-  const rowKeyFrom = (r: { client_id: string; team: string }) => {
-    return `${r.client_id}__${r.team}`;
-  };
-
-  const rowKeyBaseFrom = (r: { client_id: string; team: string }) => {
-    return `${r.client_id}__${r.team}`;
-  };
+  const rowKeyFrom = (r: { client_id: string; country: string; team: string }) =>
+    `${r.client_id}__${r.country}__${r.team}`;
 
   const [uiEnrichment, setUiEnrichment] = useState<Enrichment[]>([]);
   const enrichmentState = useMemo(() => {
     // Source of truth is Data.tsx; UI additions are in-memory only.
-    return [...initialEnrichment, ...uiEnrichment];
-  }, [uiEnrichment]);
+    return [...(initialEnrichment ?? []), ...uiEnrichment];
+  }, [initialEnrichment, uiEnrichment]);
+
+  const enrichmentForGrid = useMemo(() => {
+    if (!excludedTeams.length) return enrichmentState;
+    return enrichmentState.filter((e) => {
+      const teams = e.participant_team.split(",").map((t) => t.trim()).filter(Boolean);
+      return teams.some((t) => !isExcludedTeam(t));
+    });
+  }, [enrichmentState]);
   const [overlayEditor, setOverlayEditor] = useState<OverlayEditorState>(null);
 
   const [searchText, setSearchText] = useState("");
@@ -60,8 +107,8 @@ export default function ClientTeamHeatmap() {
   const weekSequence = useMemo(() => {
     const normalizeToUtcDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 
-    const meetingDates = meetings.map((m) => parseCreatedAtLocal(m.created_at));
-    const enrichmentDates = enrichmentState.map((e) => parseCreatedAtLocal(e.created_at));
+    const meetingDates = meetingsForGrid.map((m) => parseCreatedAtLocal(m.created_at));
+    const enrichmentDates = enrichmentForGrid.map((e) => parseCreatedAtLocal(e.created_at));
 
     const validDates = [...meetingDates, ...enrichmentDates]
       .filter((d) => !isNaN(d.getTime()))
@@ -88,7 +135,7 @@ export default function ClientTeamHeatmap() {
       cur = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth(), cur.getUTCDate() + 7));
     }
     return seq;
-  }, [enrichmentState]);
+  }, [meetingsForGrid, enrichmentForGrid]);
 
   // Show most recent weeks first
   const weekKeys = weekSequence.map((s) => s.key).slice().reverse();
@@ -104,55 +151,94 @@ export default function ClientTeamHeatmap() {
     return `${year}-W${String(week).padStart(2, "0")}`;
   })();
 
+  const DEFAULT_STATUS: OverlayStatus = "Discussions ongoing";
+  const OVERLAY_STATUS_VALUES = [
+    "Discussions ongoing",
+    "onboarding in progress",
+    "live",
+    "on hold",
+    "abandonned",
+  ] as const;
+
+  const isOverlayStatus = (v: unknown): v is OverlayStatus =>
+    typeof v === "string" && (OVERLAY_STATUS_VALUES as readonly string[]).includes(v);
+
+  const weekKeyFromDate = (d: Date) => {
+    if (isNaN(d.getTime())) return "";
+    // Use the *local calendar day* (year/month/day) but evaluate in UTC to avoid timezone rollover.
+    const utcDay = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const { year, week } = getISOWeekYear(utcDay);
+    return `${year}-W${String(week).padStart(2, "0")}`;
+  };
+
   const normalizedEnrichment = useMemo(() => {
     const out: Array<{
       client_id: string;
+      country: string;
       team: string;
       date: Date;
       status?: Enrichment["status"];
       comment?: string;
+      potential_revenue?: Enrichment["potential_revenue"];
       feeling?: Enrichment["feeling"];
     }> = [];
 
-    for (const e of enrichmentState) {
+    for (const e of enrichmentForGrid) {
       const d = parseCreatedAtLocal(e.created_at);
       if (isNaN(d.getTime())) continue;
-      const teams = e.participant_team.split(",").map((t) => t.trim()).filter(Boolean);
+      const teams = e.participant_team
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .filter((t) => !isExcludedTeam(t));
       for (const team of teams) {
+        const client_id = e["iC ID Top Account"];
+        const country = typeof e.country === "string" ? e.country.trim() : "";
         out.push({
-          client_id: e["iC ID Top Account"],
+          client_id,
+          // Keep matching strict: if enrichment has no country, it only matches rows with empty country.
+          country,
           team,
           date: d,
           status: e.status,
           comment: e.comment,
+          potential_revenue: e.potential_revenue,
           feeling: e.feeling,
         });
       }
     }
     return out;
-  }, [enrichmentState]);
+  }, [enrichmentForGrid]);
 
   const statusByRowKey = useMemo(() => {
     const map: Record<string, { status: OverlayStatus; ts: number; idx: number }> = {};
     normalizedEnrichment.forEach((e, idx) => {
+      // Only consider records that explicitly carry a status.
+      // Empty-string means the default status ("Discussions ongoing").
+      if (e.status === undefined) return;
       const s = typeof e.status === "string" ? e.status.trim() : "";
-      if (!s) return;
-      const rk = rowKeyBaseFrom({ client_id: e.client_id, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
       const ts = e.date.getTime();
 
       const prev = map[rk];
       if (!prev || ts > prev.ts || (ts === prev.ts && idx > prev.idx)) {
-        map[rk] = { status: s as OverlayStatus, ts, idx };
+        map[rk] = { status: (s ? (s as OverlayStatus) : DEFAULT_STATUS), ts, idx };
       }
     });
 
     return Object.fromEntries(Object.entries(map).map(([rk, v]) => [rk, v.status]));
   }, [normalizedEnrichment]);
 
+  const resolveRowStatus = (rowKey: string, fromRow?: unknown): OverlayStatus => {
+    const fromEnrichment = statusByRowKey[rowKey];
+    if (fromEnrichment) return fromEnrichment;
+    return isOverlayStatus(fromRow) ? fromRow : DEFAULT_STATUS;
+  };
+
   const latestEnrichmentTsByRowKey = useMemo(() => {
     const best: Record<string, number> = {};
     normalizedEnrichment.forEach((e) => {
-      const rk = rowKeyBaseFrom({ client_id: e.client_id, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
       const ts = e.date.getTime();
       if (!Number.isFinite(ts)) return;
       const prev = best[rk];
@@ -168,7 +254,7 @@ export default function ClientTeamHeatmap() {
       if (!c) continue;
       const { year, week } = getISOWeekYear(e.date);
       const wk = `${year}-W${String(week).padStart(2, "0")}`;
-      const rk = rowKeyBaseFrom({ client_id: e.client_id, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
       const ck = cellKeyFrom(rk, wk);
       if (!map[ck]) map[ck] = [];
       map[ck].push(e.comment ?? "");
@@ -203,7 +289,7 @@ export default function ClientTeamHeatmap() {
     normalizedEnrichment.forEach((e, idx) => {
       const comment = typeof e.comment === "string" ? e.comment.trim() : "";
       if (!comment) return;
-      const rk = rowKeyBaseFrom({ client_id: e.client_id, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
       const ts = e.date.getTime();
 
       const prev = best[rk];
@@ -221,7 +307,7 @@ export default function ClientTeamHeatmap() {
     normalizedEnrichment.forEach((e, idx) => {
       const f = typeof e.feeling === "string" ? e.feeling.trim() : "";
       if (!f) return;
-      const rk = rowKeyBaseFrom({ client_id: e.client_id, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
       const ts = e.date.getTime();
 
       const prev = best[rk];
@@ -233,6 +319,24 @@ export default function ClientTeamHeatmap() {
     return Object.fromEntries(Object.entries(best).map(([rk, v]) => [rk, v.feeling]));
   }, [normalizedEnrichment]);
 
+  const potentialRevenueByRowKey = useMemo(() => {
+    const best: Record<string, { ts: number; idx: number; val: number }> = {};
+
+    normalizedEnrichment.forEach((e, idx) => {
+      const v = e.potential_revenue;
+      if (typeof v !== "number" || !Number.isFinite(v)) return;
+      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
+      const ts = e.date.getTime();
+
+      const prev = best[rk];
+      if (!prev || ts > prev.ts || (ts === prev.ts && idx > prev.idx)) {
+        best[rk] = { ts, idx, val: v };
+      }
+    });
+
+    return Object.fromEntries(Object.entries(best).map(([rk, v]) => [rk, v.val]));
+  }, [normalizedEnrichment]);
+
   // modal state (click-to-open)
   const [hovered, setHovered] = useState<HoveredCellState>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -242,6 +346,7 @@ export default function ClientTeamHeatmap() {
   type HeatmapGridRow = {
     client_id: string;
     client_name?: string;
+    country: string;
     team: string;
     status: string;
     firstMeeting: string;
@@ -253,8 +358,7 @@ export default function ClientTeamHeatmap() {
   const rowData: HeatmapGridRow[] = useMemo(() => {
     return rows.map((row) => {
       const key = rowKeyFrom(row);
-      const baseKey = rowKeyBaseFrom({ client_id: row.client_id, team: row.team });
-      const status = statusByRowKey[key] ?? statusByRowKey[baseKey] ?? (row.status as OverlayStatus) ?? "ongoing";
+      const status = resolveRowStatus(key, row.status);
 
       const weekMeetings: Record<string, InteractionCell[]> = {};
       const dates: Date[] = [];
@@ -275,7 +379,7 @@ export default function ClientTeamHeatmap() {
         : "—";
 
       const lastMeetingTs = dates.length ? Math.max(...dates.map((d) => d.getTime())) : NaN;
-      const lastEnrichmentTs = latestEnrichmentTsByRowKey[baseKey] ?? NaN;
+      const lastEnrichmentTs = latestEnrichmentTsByRowKey[key] ?? NaN;
       const lastUpdateTs = Math.max(
         Number.isFinite(lastMeetingTs) ? lastMeetingTs : -Infinity,
         Number.isFinite(lastEnrichmentTs) ? lastEnrichmentTs : -Infinity
@@ -285,6 +389,7 @@ export default function ClientTeamHeatmap() {
       return {
         client_id: row.client_id,
         client_name: row.client_name,
+        country: row.country,
         team: row.team,
         status,
         firstMeeting,
@@ -293,7 +398,7 @@ export default function ClientTeamHeatmap() {
         weekCounts,
       };
     });
-  }, [rows, weekKeys.length, statusByRowKey, latestEnrichmentTsByRowKey]);
+  }, [rows, statusByRowKey, latestEnrichmentTsByRowKey]);
 
   const gridRef = useRef<AgGridReact<HeatmapGridRow> | null>(null);
 
@@ -327,7 +432,11 @@ export default function ClientTeamHeatmap() {
                 client_id: params.data.client_id,
                 client_name: params.data.client_name,
                 team: params.data.team,
-                rowKey: rowKeyBaseFrom({ client_id: params.data.client_id, team: params.data.team }),
+                rowKey: rowKeyFrom({
+                  client_id: params.data.client_id,
+                  country: params.data.country,
+                  team: params.data.team,
+                }),
                 weekKey,
                 interactions,
               });
@@ -379,20 +488,21 @@ export default function ClientTeamHeatmap() {
           if (params.node.group) return null;
 
           const key = rowKeyFrom(row);
-          const baseKey = rowKeyBaseFrom({ client_id: row.client_id, team: row.team });
-          const hasAny = Boolean(rowHasAnyComment[key] || rowHasAnyComment[baseKey]);
+          const hasAny = Boolean(rowHasAnyComment[key]);
 
           return (
             <button
               type="button"
               onClick={() => {
-                const existingStatus =
-                  statusByRowKey[key] ?? statusByRowKey[baseKey] ?? (row.status as OverlayStatus) ?? "ongoing";
+                const existingStatus = resolveRowStatus(key, row.status);
 
                 setOverlayEditor({
-                  row: { client_id: row.client_id, team: row.team },
+                  row: { client_id: row.client_id, country: row.country, team: row.team },
                   status: existingStatus,
-                  feeling: (feelingByRowKey[baseKey] ?? "") as OverlayFeeling,
+                  feeling: (feelingByRowKey[key] ?? "") as OverlayFeeling,
+                  potentialRevenue:
+                    potentialRevenueByRowKey[key] === undefined ? "" : String(potentialRevenueByRowKey[key]),
+                  savedAtDate: formatDateLocal(new Date()),
                   newComment: "",
                 });
               }}
@@ -424,6 +534,12 @@ export default function ClientTeamHeatmap() {
         rowGroup: groupBy === "client",
         hide: groupBy === "client",
       },
+      {
+        headerName: "Country",
+        field: "country",
+        pinned: "left",
+        width: 90,
+      },
       /*{
         headerName: "Client Name",
         field: "client_name",
@@ -452,8 +568,20 @@ export default function ClientTeamHeatmap() {
           const row = p.data;
           if (!row) return "";
           const key = rowKeyFrom(row);
-          const baseKey = rowKeyBaseFrom({ client_id: row.client_id, team: row.team });
-          return statusByRowKey[key] ?? statusByRowKey[baseKey] ?? row.status ?? "ongoing";
+          return resolveRowStatus(key, row.status);
+        },
+      },
+      {
+        headerName: "Potential revenue",
+        colId: "potentialRevenue",
+        pinned: "left",
+        width: 150,
+        valueGetter: (p) => {
+          const row = p.data;
+          if (!row) return "";
+          const key = rowKeyFrom(row);
+          const v = potentialRevenueByRowKey[key];
+          return v === undefined ? "" : v;
         },
       },
       {
@@ -464,14 +592,14 @@ export default function ClientTeamHeatmap() {
         valueGetter: (p) => {
           const row = p.data;
           if (!row) return "";
-          const baseKey = rowKeyBaseFrom({ client_id: row.client_id, team: row.team });
-          return latestCommentByRowKey[baseKey] ?? "";
+          const key = rowKeyFrom(row);
+          return latestCommentByRowKey[key] ?? "";
         },
         tooltipValueGetter: (p) => {
           const row = p.data;
           if (!row) return "";
-          const baseKey = rowKeyBaseFrom({ client_id: row.client_id, team: row.team });
-          return latestCommentByRowKey[baseKey] ?? "";
+          const key = rowKeyFrom(row);
+          return latestCommentByRowKey[key] ?? "";
         },
         cellStyle: {
           whiteSpace: "nowrap",
@@ -517,7 +645,7 @@ export default function ClientTeamHeatmap() {
         },
       },
     ],
-    [groupBy, latestCommentByRowKey, rowHasAnyComment, statusByRowKey]
+    [groupBy, latestCommentByRowKey, rowHasAnyComment, statusByRowKey, feelingByRowKey, potentialRevenueByRowKey]
   );
 
   const weekCols: ColDef<HeatmapGridRow>[] = useMemo(() => {
@@ -543,11 +671,7 @@ export default function ClientTeamHeatmap() {
           if (!row) return { count, comments: [] } as WeekCellValue;
 
           const rowKey = rowKeyFrom(row);
-          const baseKey = rowKeyBaseFrom({ client_id: row.client_id, team: row.team });
-          const comments =
-            commentsByCellKey[cellKeyFrom(rowKey, wk)] ??
-            commentsByCellKey[cellKeyFrom(baseKey, wk)] ??
-            [];
+          const comments = commentsByCellKey[cellKeyFrom(rowKey, wk)] ?? [];
 
           return { count, comments } as WeekCellValue;
         },
@@ -575,6 +699,20 @@ export default function ClientTeamHeatmap() {
     []
   );
 
+  const overlaySavedWeekKey = overlayEditor
+    ? (() => {
+        const d = parseDatetimeLocalInput(overlayEditor.savedAtDate);
+        return weekKeyFromDate(d) || curWK;
+      })()
+    : curWK;
+
+  const overlayExistingComments = overlayEditor
+    ? (() => {
+        const rk = rowKeyFrom(overlayEditor.row);
+        return commentsByCellKey[cellKeyFrom(rk, overlaySavedWeekKey)] ?? [];
+      })()
+    : [];
+
   const downloadCsv = () => {
     const api = gridApiRef.current ?? gridRef.current?.api;
     if (!api) return;
@@ -598,6 +736,24 @@ export default function ClientTeamHeatmap() {
       },
     });
   };
+
+  if (loadError) {
+    return (
+      <div style={containerStyle}>
+        <h2>Client × Team Interaction Heatmap</h2>
+        <p style={{ color: "#b91c1c" }}>Failed to load fixtures: {loadError}</p>
+      </div>
+    );
+  }
+
+  if (!rawMeetings || !initialEnrichment) {
+    return (
+      <div style={containerStyle}>
+        <h2>Client × Team Interaction Heatmap</h2>
+        <p>Loading…</p>
+      </div>
+    );
+  }
 
   if (rows.length === 0) {
     return (
@@ -701,7 +857,7 @@ export default function ClientTeamHeatmap() {
           }}
           suppressMovableColumns
           ensureDomOrder
-          getRowId={(p) => `${p.data.client_id}__${p.data.team}`}
+          getRowId={(p) => rowKeyFrom({ client_id: p.data.client_id, country: p.data.country, team: p.data.team })}
         />
       </div>
 
@@ -709,16 +865,19 @@ export default function ClientTeamHeatmap() {
         <EnrichmentEditorModal
           overlayEditor={overlayEditor}
           onClose={() => setOverlayEditor(null)}
-          curWK={curWK}
-          existingComments={(() => {
-            const rk = rowKeyBaseFrom({ client_id: overlayEditor.row.client_id, team: overlayEditor.row.team });
-            return commentsByCellKey[cellKeyFrom(rk, curWK)] ?? [];
-          })()}
+          savedWeekKey={overlaySavedWeekKey}
+          existingComments={overlayExistingComments}
+          onChangeSavedAtDate={(v) =>
+            setOverlayEditor((prev) => (prev ? { ...prev, savedAtDate: v } : prev))
+          }
           onChangeStatus={(s) =>
             setOverlayEditor((prev) => (prev ? { ...prev, status: s } : prev))
           }
           onChangeFeeling={(f) =>
             setOverlayEditor((prev) => (prev ? { ...prev, feeling: f } : prev))
+          }
+          onChangePotentialRevenue={(v) =>
+            setOverlayEditor((prev) => (prev ? { ...prev, potentialRevenue: v } : prev))
           }
           onChangeNewComment={(v) =>
             setOverlayEditor((prev) => (prev ? { ...prev, newComment: v } : prev))
@@ -729,23 +888,36 @@ export default function ClientTeamHeatmap() {
             const statusStore = statusToStore(overlayEditor.status);
             const feelingStore = feelingToStore(overlayEditor.feeling);
 
-            if (!trimmedComment && !statusStore && !feelingStore) {
+            const prRaw = overlayEditor.potentialRevenue.trim();
+            const prNum = prRaw ? Number(prRaw) : undefined;
+            const potentialRevenueStore =
+              prNum === undefined ? undefined : Number.isFinite(prNum) && prNum >= 0 ? prNum : undefined;
+
+            if (!trimmedComment && !statusStore && !feelingStore && potentialRevenueStore === undefined) {
               alert("Nothing to save (no status, feeling, or comment)");
               return;
             }
 
-            // Use the actual day of entry for correct status ordering.
-            // ISO-week bucketing for comments still works (any day in the week maps to the same week).
-            const savedAt = formatCreatedAtLocal(new Date());
+            // Date-only selection: persist as local midnight.
+            const datePart = (overlayEditor.savedAtDate ?? "").trim();
+            const savedAt = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
+              ? `${datePart} 00:00:00.000`
+              : formatCreatedAtLocal(new Date());
+
+            const country = overlayEditor.row.country.trim();
             const record: Enrichment = {
               created_at: savedAt,
               "iC ID Top Account": overlayEditor.row.client_id,
+              country: country || undefined,
               participant_team: overlayEditor.row.team,
               status: statusStore,
+              potential_revenue: potentialRevenueStore,
               feeling: feelingStore,
               comment: trimmedComment ? overlayEditor.newComment : undefined,
             };
-            console.log("Saving enrichment record:", record);
+            void postEnrichment(record).catch((err) => {
+              console.error("Failed to post enrichment (dummy api)", err);
+            });
 
             setUiEnrichment((prev) => [...prev, record]);
             setOverlayEditor(null);
@@ -762,7 +934,7 @@ export default function ClientTeamHeatmap() {
           }}
           comments={commentsByCellKey[cellKeyFrom(hovered.rowKey, hovered.weekKey)] ?? []}
           interactions={hovered.interactions}
-          meetings={meetings}
+          meetings={meetingsForGrid}
           formatDateUTC={formatDateUTC}
         />
       ) : null}

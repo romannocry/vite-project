@@ -1,23 +1,27 @@
-import type { Enrichment } from "./Data";
+import type { Enrichment } from "./DataTypes";
 import type { OverlayEditorState, OverlayFeeling, OverlayStatus } from "./heatmapUiTypes";
 import { Modal } from "./Modal";
 
 export function EnrichmentEditorModal({
   overlayEditor,
   onClose,
-  curWK,
+  savedWeekKey,
   existingComments,
+  onChangeSavedAtDate,
   onChangeStatus,
   onChangeFeeling,
+  onChangePotentialRevenue,
   onChangeNewComment,
   onSave,
 }: {
   overlayEditor: Exclude<OverlayEditorState, null>;
   onClose: () => void;
-  curWK: string;
+  savedWeekKey: string;
   existingComments: string[];
+  onChangeSavedAtDate: (v: string) => void;
   onChangeStatus: (s: OverlayStatus) => void;
   onChangeFeeling: (f: OverlayFeeling) => void;
+  onChangePotentialRevenue: (v: string) => void;
   onChangeNewComment: (v: string) => void;
   onSave: () => void;
 }) {
@@ -25,11 +29,30 @@ export function EnrichmentEditorModal({
     <Modal onClose={onClose}>
       <h3 style={{ marginTop: 0 }}>Update status / add week comment</h3>
       <p style={{ marginTop: 0, color: "#444" }}>
-        Client <strong>{overlayEditor.row.client_id}</strong> — Team <strong>{overlayEditor.row.team}</strong>
+        Client <strong>{overlayEditor.row.client_id}</strong>
+        {overlayEditor.row.country ? (
+          <>
+            {" "}
+            — Country <strong>{overlayEditor.row.country}</strong>
+          </>
+        ) : null}
+        {" "}
+        — Team <strong>{overlayEditor.row.team}</strong>
       </p>
 
-      <div style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>
-        Saved on week: <strong>{curWK}</strong>
+      <div style={{ display: "grid", gap: 6, marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: "#444" }}>Saved on</div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <input
+            type="date"
+            value={overlayEditor.savedAtDate}
+            onChange={(e) => onChangeSavedAtDate(e.target.value)}
+            style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #ddd" }}
+          />
+          <div style={{ fontSize: 12, color: "#666" }}>
+            Week: <strong>{savedWeekKey}</strong>
+          </div>
+        </div>
       </div>
 
       {existingComments.length ? (
@@ -66,11 +89,25 @@ export function EnrichmentEditorModal({
             onChange={(e) => onChangeStatus(e.target.value as OverlayStatus)}
             style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #ddd" }}
           >
-            <option value="ongoing">ongoing</option>
+            <option value="Discussions ongoing">Discussions ongoing</option>
+            <option value="onboarding in progress">onboarding in progress</option>
             <option value="live">live</option>
             <option value="on hold">on hold</option>
             <option value="abandonned">abandonned</option>
           </select>
+        </label>
+
+        <label style={{ display: "grid", gap: 6 }}>
+          <span style={{ fontSize: 12, color: "#444" }}>Potential revenue</span>
+          <input
+            type="number"
+            value={overlayEditor.potentialRevenue}
+            onChange={(e) => onChangePotentialRevenue(e.target.value)}
+            placeholder="e.g. 250000"
+            step="any"
+            min={0}
+            style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #ddd" }}
+          />
         </label>
 
         <label style={{ display: "grid", gap: 6 }}>
@@ -133,7 +170,7 @@ export function EnrichmentEditorModal({
 }
 
 export function statusToStore(status: OverlayStatus): Enrichment["status"] {
-  return status === "ongoing" ? "" : (status as Enrichment["status"]);
+  return status === "Discussions ongoing" ? "" : (status as Enrichment["status"]);
 }
 
 export function feelingToStore(feeling: OverlayFeeling): Enrichment["feeling"] {

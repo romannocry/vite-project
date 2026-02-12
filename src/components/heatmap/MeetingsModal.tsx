@@ -1,5 +1,5 @@
 import type { InteractionCell } from "./useHeatmapData";
-import type { RawMeeting } from "./Data";
+import type { RawMeeting } from "./DataTypes";
 import { Modal } from "./Modal";
 
 export function MeetingsModal({
