@@ -5,7 +5,7 @@ import { parseCreatedAtLocal } from "./utils";
 export interface InteractionCell {
   client_id: string;
   client_name?: string;
-  country: string;
+  authorRegion: string;
   team: string;
   status: RawMeeting["status"];
   id: string;
@@ -16,7 +16,7 @@ export interface InteractionCell {
 export interface HeatmapRow {
   client_id: string;
   client_name?: string;
-  country: string;
+  authorRegion: string;
   team: string;
   status: string;
   cells: Record<number, InteractionCell>;
@@ -35,9 +35,26 @@ export function useHeatmapData(
     const excluded = new Set((opts?.excludedTeams ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean));
     const isExcludedTeam = (team: string) => excluded.has(team.trim().toLowerCase());
 
+    const meetingDate = (m: RawMeeting) => {
+      // Primary source: activityDate (date-only)
+      const ad = typeof m.activityDate === "string" ? m.activityDate.trim() : "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(ad)) {
+        const d = new Date(`${ad}T00:00:00`);
+        if (!isNaN(d.getTime())) return d;
+      }
+
+      // Fallback: created_at (local datetime)
+      const d2 = parseCreatedAtLocal(m.created_at);
+      if (!isNaN(d2.getTime())) return d2;
+
+      return new Date(NaN);
+    };
+
     // 1) Explode multi-team meetings into per-team entries
     const exploded: Omit<InteractionCell, "interactionIndex">[] = rawMeetings.flatMap((m) => {
-      const country = typeof m.country === "string" ? m.country.trim() : "";
+      const authorRegion = typeof m["Author Region"] === "string" ? m["Author Region"].trim() : "";
+      const date = meetingDate(m);
+      if (isNaN(date.getTime())) return [];
       const teams = m.participant_team
         .split(",")
         .map((t) => t.trim())
@@ -46,18 +63,18 @@ export function useHeatmapData(
       return teams.map((team) => ({
         client_id: m["iC ID Top Account"],
         client_name: m.client_name,
-        country,
+        authorRegion,
         team,
         id: m.id,
-        date: parseCreatedAtLocal(m.created_at),
+        date,
         status: m.status,
       }));
     });
 
-    // 2) Group by client + country + team
+    // 2) Group by client + author region + team
     const grouped: Record<string, InteractionCell[]> = {};
     for (const row of exploded) {
-      const key = `${row.client_id}__${row.country}__${row.team}`;
+      const key = `${row.client_id}__${row.authorRegion}__${row.team}`;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push({ ...row, interactionIndex: 0 });
     }
@@ -72,7 +89,7 @@ export function useHeatmapData(
 
     // 4) Build HeatmapRow objects
     return Object.values(grouped).map((rows) => {
-      const { client_id, client_name, country, team } = rows[0];
+      const { client_id, client_name, authorRegion, team } = rows[0];
 
       const lastNonEmptyStatus = [...rows]
         .reverse()
@@ -88,7 +105,7 @@ export function useHeatmapData(
       return {
         client_id,
         client_name,
-        country,
+        authorRegion,
         team,
         status,
         cells,

@@ -13,7 +13,7 @@ export type OverlayFeeling = "" | NonNullable<Enrichment["feeling"]>;
 export type OverlayEditorState =
   | null
   | {
-      row: { client_id: string; country: string; team: string };
+      row: { client_id: string; authorRegion: string; team: string };
       status: OverlayStatus;
       feeling: OverlayFeeling;
       potentialRevenue: string;

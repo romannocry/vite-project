@@ -30,10 +30,10 @@ export function EnrichmentEditorModal({
       <h3 style={{ marginTop: 0 }}>Update status / add week comment</h3>
       <p style={{ marginTop: 0, color: "#444" }}>
         Client <strong>{overlayEditor.row.client_id}</strong>
-        {overlayEditor.row.country ? (
+        {overlayEditor.row.authorRegion ? (
           <>
             {" "}
-            — Country <strong>{overlayEditor.row.country}</strong>
+            — Author Region <strong>{overlayEditor.row.authorRegion}</strong>
           </>
         ) : null}
         {" "}

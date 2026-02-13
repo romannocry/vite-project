@@ -78,8 +78,8 @@ export default function ClientTeamHeatmap() {
 
   const [groupBy, setGroupBy] = useState<"none" | "client" | "team" | "status">("none");
 
-  const rowKeyFrom = (r: { client_id: string; country: string; team: string }) =>
-    `${r.client_id}__${r.country}__${r.team}`;
+  const rowKeyFrom = (r: { client_id: string; authorRegion: string; team: string }) =>
+    `${r.client_id}__${r.authorRegion}__${r.team}`;
 
   const [uiEnrichment, setUiEnrichment] = useState<Enrichment[]>([]);
   const enrichmentState = useMemo(() => {
@@ -107,7 +107,16 @@ export default function ClientTeamHeatmap() {
   const weekSequence = useMemo(() => {
     const normalizeToUtcDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 
-    const meetingDates = meetingsForGrid.map((m) => parseCreatedAtLocal(m.created_at));
+    const meetingDate = (created_at: string, activityDate?: string) => {
+      const ad = typeof activityDate === "string" ? activityDate.trim() : "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(ad)) {
+        const d = new Date(`${ad}T00:00:00`);
+        if (!isNaN(d.getTime())) return d;
+      }
+      return parseCreatedAtLocal(created_at);
+    };
+
+    const meetingDates = meetingsForGrid.map((m) => meetingDate(m.created_at, (m as any).activityDate));
     const enrichmentDates = enrichmentForGrid.map((e) => parseCreatedAtLocal(e.created_at));
 
     const validDates = [...meetingDates, ...enrichmentDates]
@@ -174,7 +183,7 @@ export default function ClientTeamHeatmap() {
   const normalizedEnrichment = useMemo(() => {
     const out: Array<{
       client_id: string;
-      country: string;
+      authorRegion: string;
       team: string;
       date: Date;
       status?: Enrichment["status"];
@@ -193,11 +202,11 @@ export default function ClientTeamHeatmap() {
         .filter((t) => !isExcludedTeam(t));
       for (const team of teams) {
         const client_id = e["iC ID Top Account"];
-        const country = typeof e.country === "string" ? e.country.trim() : "";
+        const authorRegion = typeof e["Author Region"] === "string" ? e["Author Region"].trim() : "";
         out.push({
           client_id,
-          // Keep matching strict: if enrichment has no country, it only matches rows with empty country.
-          country,
+          // Keep matching strict: if enrichment has no Author Region, it only matches rows with empty region.
+          authorRegion,
           team,
           date: d,
           status: e.status,
@@ -217,7 +226,7 @@ export default function ClientTeamHeatmap() {
       // Empty-string means the default status ("Discussions ongoing").
       if (e.status === undefined) return;
       const s = typeof e.status === "string" ? e.status.trim() : "";
-      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, authorRegion: e.authorRegion, team: e.team });
       const ts = e.date.getTime();
 
       const prev = map[rk];
@@ -238,7 +247,7 @@ export default function ClientTeamHeatmap() {
   const latestEnrichmentTsByRowKey = useMemo(() => {
     const best: Record<string, number> = {};
     normalizedEnrichment.forEach((e) => {
-      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, authorRegion: e.authorRegion, team: e.team });
       const ts = e.date.getTime();
       if (!Number.isFinite(ts)) return;
       const prev = best[rk];
@@ -254,7 +263,7 @@ export default function ClientTeamHeatmap() {
       if (!c) continue;
       const { year, week } = getISOWeekYear(e.date);
       const wk = `${year}-W${String(week).padStart(2, "0")}`;
-      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, authorRegion: e.authorRegion, team: e.team });
       const ck = cellKeyFrom(rk, wk);
       if (!map[ck]) map[ck] = [];
       map[ck].push(e.comment ?? "");
@@ -289,7 +298,7 @@ export default function ClientTeamHeatmap() {
     normalizedEnrichment.forEach((e, idx) => {
       const comment = typeof e.comment === "string" ? e.comment.trim() : "";
       if (!comment) return;
-      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, authorRegion: e.authorRegion, team: e.team });
       const ts = e.date.getTime();
 
       const prev = best[rk];
@@ -307,7 +316,7 @@ export default function ClientTeamHeatmap() {
     normalizedEnrichment.forEach((e, idx) => {
       const f = typeof e.feeling === "string" ? e.feeling.trim() : "";
       if (!f) return;
-      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, authorRegion: e.authorRegion, team: e.team });
       const ts = e.date.getTime();
 
       const prev = best[rk];
@@ -325,7 +334,7 @@ export default function ClientTeamHeatmap() {
     normalizedEnrichment.forEach((e, idx) => {
       const v = e.potential_revenue;
       if (typeof v !== "number" || !Number.isFinite(v)) return;
-      const rk = rowKeyFrom({ client_id: e.client_id, country: e.country, team: e.team });
+      const rk = rowKeyFrom({ client_id: e.client_id, authorRegion: e.authorRegion, team: e.team });
       const ts = e.date.getTime();
 
       const prev = best[rk];
@@ -346,7 +355,7 @@ export default function ClientTeamHeatmap() {
   type HeatmapGridRow = {
     client_id: string;
     client_name?: string;
-    country: string;
+    authorRegion: string;
     team: string;
     status: string;
     firstMeeting: string;
@@ -389,7 +398,7 @@ export default function ClientTeamHeatmap() {
       return {
         client_id: row.client_id,
         client_name: row.client_name,
-        country: row.country,
+        authorRegion: row.authorRegion,
         team: row.team,
         status,
         firstMeeting,
@@ -434,7 +443,7 @@ export default function ClientTeamHeatmap() {
                 team: params.data.team,
                 rowKey: rowKeyFrom({
                   client_id: params.data.client_id,
-                  country: params.data.country,
+                  authorRegion: params.data.authorRegion,
                   team: params.data.team,
                 }),
                 weekKey,
@@ -497,7 +506,7 @@ export default function ClientTeamHeatmap() {
                 const existingStatus = resolveRowStatus(key, row.status);
 
                 setOverlayEditor({
-                  row: { client_id: row.client_id, country: row.country, team: row.team },
+                  row: { client_id: row.client_id, authorRegion: row.authorRegion, team: row.team },
                   status: existingStatus,
                   feeling: (feelingByRowKey[key] ?? "") as OverlayFeeling,
                   potentialRevenue:
@@ -535,8 +544,8 @@ export default function ClientTeamHeatmap() {
         hide: groupBy === "client",
       },
       {
-        headerName: "Country",
-        field: "country",
+        headerName: "Author Region",
+        field: "authorRegion",
         pinned: "left",
         width: 90,
       },
@@ -857,7 +866,9 @@ export default function ClientTeamHeatmap() {
           }}
           suppressMovableColumns
           ensureDomOrder
-          getRowId={(p) => rowKeyFrom({ client_id: p.data.client_id, country: p.data.country, team: p.data.team })}
+          getRowId={(p) =>
+            rowKeyFrom({ client_id: p.data.client_id, authorRegion: p.data.authorRegion, team: p.data.team })
+          }
         />
       </div>
 
@@ -904,11 +915,11 @@ export default function ClientTeamHeatmap() {
               ? `${datePart} 00:00:00.000`
               : formatCreatedAtLocal(new Date());
 
-            const country = overlayEditor.row.country.trim();
+            const authorRegion = overlayEditor.row.authorRegion.trim();
             const record: Enrichment = {
               created_at: savedAt,
               "iC ID Top Account": overlayEditor.row.client_id,
-              country: country || undefined,
+              "Author Region": authorRegion || undefined,
               participant_team: overlayEditor.row.team,
               status: statusStore,
               potential_revenue: potentialRevenueStore,
