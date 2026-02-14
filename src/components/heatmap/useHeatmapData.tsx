@@ -32,6 +32,17 @@ export function useHeatmapData(
   return useMemo(() => {
     if (!rawMeetings || rawMeetings.length === 0) return [];
 
+    // Guardrail: some exports/fixtures can contain duplicated meeting rows.
+    // Since `id` is the meeting identifier, drop duplicates to avoid double-counting.
+    const seenMeetingIds = new Set<string>();
+    const meetings = rawMeetings.filter((m) => {
+      const id = typeof m.id === "string" ? m.id.trim() : "";
+      if (!id) return true;
+      if (seenMeetingIds.has(id)) return false;
+      seenMeetingIds.add(id);
+      return true;
+    });
+
     const excluded = new Set((opts?.excludedTeams ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean));
     const isExcludedTeam = (team: string) => excluded.has(team.trim().toLowerCase());
 
@@ -51,18 +62,29 @@ export function useHeatmapData(
     };
 
     // 1) Explode multi-team meetings into per-team entries
-    const exploded: Omit<InteractionCell, "interactionIndex">[] = rawMeetings.flatMap((m) => {
+    const exploded: Omit<InteractionCell, "interactionIndex">[] = meetings.flatMap((m) => {
       const authorRegion = typeof m["Author Region"] === "string" ? m["Author Region"].trim() : "";
       const date = meetingDate(m);
       if (isNaN(date.getTime())) return [];
-      const teams = m.participant_team
+      const teamTokens = m.participant_team
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean)
         .filter((t) => !isExcludedTeam(t));
+
+      // Some meetings may list the same team multiple times; only count it once.
+      const teams: string[] = [];
+      const seenTeams = new Set<string>();
+      for (const t of teamTokens) {
+        const k = t.toLowerCase();
+        if (seenTeams.has(k)) continue;
+        seenTeams.add(k);
+        teams.push(t);
+      }
+
       return teams.map((team) => ({
         client_id: m["iC ID Top Account"],
-        client_name: m.client_name,
+        client_name: m["Top Account"] ?? m.client_name,
         authorRegion,
         team,
         id: m.id,
