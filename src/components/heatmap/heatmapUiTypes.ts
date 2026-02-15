@@ -14,6 +14,7 @@ export type OverlayEditorState =
   | null
   | {
       row: { client_id: string; authorRegion: string; team: string };
+      client_name?: string;
       status: OverlayStatus;
       feeling: OverlayFeeling;
       potentialRevenue: string;
@@ -35,6 +36,7 @@ export type HoveredCellState =
 export type WeekCellValue = {
   count: number;
   comments: string[];
+  hasEnrichment?: boolean;
 };
 
 export type EnrichmentRecord = Enrichment;

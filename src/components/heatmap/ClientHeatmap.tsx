@@ -76,7 +76,8 @@ export default function ClientTeamHeatmap() {
 
   const rows = useHeatmapData(meetingsForGrid, { excludedTeams });
 
-  const [groupBy, setGroupBy] = useState<"none" | "client" | "team" | "status">("none");
+  // Default grouping on load.
+  const [groupBy, setGroupBy] = useState<"none" | "client" | "team" | "status">("team");
 
   const rowKeyFrom = (r: { client_id: string; authorRegion: string; team: string }) =>
     `${r.client_id}__${r.authorRegion}__${r.team}`;
@@ -219,6 +220,58 @@ export default function ClientTeamHeatmap() {
     return out;
   }, [enrichmentForGrid]);
 
+  // Any enrichment record (status/feeling/comment/potential revenue/any future field)
+  // should visually mark the corresponding week cell.
+  const hasEnrichmentByCellKey = useMemo(() => {
+    const ignoreKeys = new Set<string>(["created_at", "iC ID Top Account", "Author Region", "participant_team"]);
+
+    const isMeaningfulEnrichment = (e: Enrichment) => {
+      const obj = e as unknown as Record<string, unknown>;
+      for (const [k, v] of Object.entries(obj)) {
+        if (ignoreKeys.has(k)) continue;
+        if (v === undefined || v === null) continue;
+
+        if (typeof v === "string") {
+          // Status uses empty-string to mean the default status, but it's still an explicit update.
+          if (k === "status") return true;
+          if (v.trim().length === 0) continue;
+          return true;
+        }
+
+        if (typeof v === "number") return Number.isFinite(v);
+        if (typeof v === "boolean") return true;
+
+        // objects/arrays/etc.
+        return true;
+      }
+      return false;
+    };
+
+    const map: Record<string, boolean> = {};
+    for (const e of enrichmentForGrid) {
+      if (!isMeaningfulEnrichment(e)) continue;
+      const d = parseCreatedAtLocal(e.created_at);
+      if (isNaN(d.getTime())) continue;
+
+      const teams = e.participant_team
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .filter((t) => !isExcludedTeam(t));
+
+      const { year, week } = getISOWeekYear(d);
+      const wk = `${year}-W${String(week).padStart(2, "0")}`;
+
+      for (const team of teams) {
+        const client_id = e["iC ID Top Account"];
+        const authorRegion = typeof e["Author Region"] === "string" ? e["Author Region"].trim() : "";
+        const rk = rowKeyFrom({ client_id, authorRegion, team });
+        map[cellKeyFrom(rk, wk)] = true;
+      }
+    }
+    return map;
+  }, [enrichmentForGrid]);
+
   const statusByRowKey = useMemo(() => {
     const map: Record<string, { status: OverlayStatus; ts: number; idx: number }> = {};
     normalizedEnrichment.forEach((e, idx) => {
@@ -281,16 +334,15 @@ export default function ClientTeamHeatmap() {
     api.refreshHeader();
   }, [commentsByCellKey, statusByRowKey]);
 
-  const rowHasAnyComment = useMemo(() => {
+  const rowHasAnyEnrichment = useMemo(() => {
     const map: Record<string, boolean> = {};
-    for (const [ck, vals] of Object.entries(commentsByCellKey)) {
-      if (!Array.isArray(vals) || vals.length === 0) continue;
+    for (const ck of Object.keys(hasEnrichmentByCellKey)) {
       const rk = ck.split("||")[0] ?? "";
       if (!rk) continue;
       map[rk] = true;
     }
     return map;
-  }, [commentsByCellKey]);
+  }, [hasEnrichmentByCellKey]);
 
   const latestCommentByRowKey = useMemo(() => {
     const best: Record<string, { ts: number; idx: number; comment: string }> = {};
@@ -419,14 +471,15 @@ export default function ClientTeamHeatmap() {
     const has = count > 0;
     const comments = Array.isArray(params.value?.comments) ? params.value.comments : [];
     const hasComment = comments.some((c) => typeof c === "string" && c.trim().length > 0);
+    const hasEnrichment = Boolean(params.value?.hasEnrichment) || hasComment;
     const squareStyle = {
       width: 12,
       height: 12,
       backgroundColor: has ? "#16a34a" : "#ebedf0",
       borderRadius: 2,
-      border: !has && hasComment ? "1px solid #7c3aed" : undefined,
-      boxShadow: has && hasComment ? "0 0 0 1px #7c3aed" : undefined,
-      cursor: has || hasComment ? "pointer" : "default",
+      border: !has && hasEnrichment ? "1px solid #7c3aed" : undefined,
+      boxShadow: has && hasEnrichment ? "0 0 0 1px #7c3aed" : undefined,
+      cursor: has || hasEnrichment ? "pointer" : "default",
     } as const;
 
     return (
@@ -453,13 +506,13 @@ export default function ClientTeamHeatmap() {
             }}
             title={
               has
-                ? `${count} meeting(s)${hasComment ? " • note" : ""}`
-                : hasComment
-                  ? "note"
+                ? `${count} meeting(s)${hasEnrichment ? " • enriched" : ""}${hasComment ? " • note" : ""}`
+                : hasEnrichment
+                  ? "enriched"
                   : ""
             }
           />
-          {hasComment ? (
+          {hasEnrichment ? (
             <div
               style={{
                 position: "absolute",
@@ -497,7 +550,7 @@ export default function ClientTeamHeatmap() {
           if (params.node.group) return null;
 
           const key = rowKeyFrom(row);
-          const hasAny = Boolean(rowHasAnyComment[key]);
+          const hasAny = Boolean(rowHasAnyEnrichment[key]);
 
           return (
             <button
@@ -507,6 +560,7 @@ export default function ClientTeamHeatmap() {
 
                 setOverlayEditor({
                   row: { client_id: row.client_id, authorRegion: row.authorRegion, team: row.team },
+                  client_name: row.client_name,
                   status: existingStatus,
                   feeling: (feelingByRowKey[key] ?? "") as OverlayFeeling,
                   potentialRevenue:
@@ -654,7 +708,7 @@ export default function ClientTeamHeatmap() {
         },
       },
     ],
-    [groupBy, latestCommentByRowKey, rowHasAnyComment, statusByRowKey, feelingByRowKey, potentialRevenueByRowKey]
+    [groupBy, latestCommentByRowKey, rowHasAnyEnrichment, statusByRowKey, feelingByRowKey, potentialRevenueByRowKey]
   );
 
   const weekCols: ColDef<HeatmapGridRow>[] = useMemo(() => {
@@ -681,8 +735,9 @@ export default function ClientTeamHeatmap() {
 
           const rowKey = rowKeyFrom(row);
           const comments = commentsByCellKey[cellKeyFrom(rowKey, wk)] ?? [];
+          const hasEnrichment = Boolean(hasEnrichmentByCellKey[cellKeyFrom(rowKey, wk)]);
 
-          return { count, comments } as WeekCellValue;
+          return { count, comments, hasEnrichment } as WeekCellValue;
         },
         cellRenderer: WeekSquareRenderer,
         cellStyle: {
@@ -693,7 +748,7 @@ export default function ClientTeamHeatmap() {
         },
       };
     });
-  }, [weekKeys.join("|"), curWK, commentsByCellKey]);
+  }, [weekKeys.join("|"), curWK, commentsByCellKey, hasEnrichmentByCellKey]);
 
   const columnDefs: ColDef<HeatmapGridRow>[] = useMemo(() => {
     return [...pinnedLeftCols, ...weekCols];
@@ -843,6 +898,16 @@ export default function ClientTeamHeatmap() {
           ref={gridRef as any}
           onGridReady={(e: GridReadyEvent) => {
             gridApiRef.current = e.api;
+
+            // Default filter on load: Author Region contains "amer".
+            // This keeps the existing search box free for ad-hoc use.
+            e.api
+              .setColumnFilterModel("authorRegion", {
+                filterType: "text",
+                type: "contains",
+                filter: "amer",
+              })
+              .then(() => e.api.onFilterChanged());
           }}
           rowData={rowData}
           columnDefs={columnDefs}

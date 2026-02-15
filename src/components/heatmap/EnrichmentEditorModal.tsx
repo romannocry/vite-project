@@ -29,7 +29,13 @@ export function EnrichmentEditorModal({
     <Modal onClose={onClose}>
       <h3 style={{ marginTop: 0 }}>Update status / add week comment</h3>
       <p style={{ marginTop: 0, color: "#444" }}>
-        Client <strong>{overlayEditor.row.client_id}</strong>
+        Client <strong>{(overlayEditor.client_name ?? "").trim() || overlayEditor.row.client_id}</strong>
+        {(overlayEditor.client_name ?? "").trim() && (overlayEditor.client_name ?? "").trim() !== overlayEditor.row.client_id ? (
+          <>
+            {" "}
+            <span style={{ color: "#666" }}>(ID: {overlayEditor.row.client_id})</span>
+          </>
+        ) : null}
         {overlayEditor.row.authorRegion ? (
           <>
             {" "}
