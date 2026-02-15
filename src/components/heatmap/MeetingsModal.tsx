@@ -14,7 +14,7 @@ export function MeetingsModal({
   hovered: { client_id: string; client_name?: string; authorRegion?: string; team: string; weekKey: string };
   onClose: () => void;
   comments: string[];
-  enrichmentEvents: Array<{ created_at: string; fields: string[] }>;
+  enrichmentEvents: Array<{ created_at: string; fields: string[]; values: Record<string, string> }>;
   interactions: InteractionCell[];
   meetings: RawMeeting[];
   formatDateUTC: (d: Date) => string;
@@ -70,21 +70,26 @@ export function MeetingsModal({
                 }}
               >
                 <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>Saved: {ev.created_at}</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <div style={{ display: "grid", gap: 4 }}>
                   {ev.fields.map((k) => (
-                    <span
-                      key={k}
-                      style={{
-                        fontSize: 12,
-                        padding: "2px 8px",
-                        borderRadius: 999,
-                        border: "1px solid #ddd",
-                        background: "#fff",
-                        color: "#111",
-                      }}
-                    >
-                      {fieldLabel(k)}
-                    </span>
+                    <div key={k} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          border: "1px solid #ddd",
+                          background: "#fff",
+                          color: "#111",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {fieldLabel(k)}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#111", whiteSpace: "pre-wrap" }}>
+                        {ev.values?.[k] ?? ""}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

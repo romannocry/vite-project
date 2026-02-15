@@ -275,8 +275,9 @@ export default function ClientTeamHeatmap() {
   const enrichmentEventsByCellKey = useMemo(() => {
     const ignoreKeys = new Set<string>(["created_at", "iC ID Top Account", "Author Region", "participant_team"]);
 
-    const meaningfulKeys = (e: Enrichment) => {
+    const meaningfulKeysAndValues = (e: Enrichment) => {
       const keys: string[] = [];
+      const values: Record<string, string> = {};
       const obj = e as unknown as Record<string, unknown>;
       for (const [k, v] of Object.entries(obj)) {
         if (ignoreKeys.has(k)) continue;
@@ -285,36 +286,48 @@ export default function ClientTeamHeatmap() {
         if (typeof v === "string") {
           if (k === "status") {
             keys.push(k);
+            values[k] = v.trim().length === 0 ? "(default)" : v.trim();
             continue;
           }
           if (v.trim().length === 0) continue;
           keys.push(k);
+          values[k] = v.trim();
           continue;
         }
 
         if (typeof v === "number") {
           if (Number.isFinite(v)) keys.push(k);
+          if (Number.isFinite(v)) values[k] = String(v);
           continue;
         }
 
         if (typeof v === "boolean") {
           keys.push(k);
+          values[k] = v ? "true" : "false";
           continue;
         }
 
         // objects/arrays/etc.
         keys.push(k);
+        try {
+          values[k] = JSON.stringify(v);
+        } catch {
+          values[k] = String(v);
+        }
       }
 
       // Stable output (makes UI deterministic)
       keys.sort();
-      return keys;
+      return { keys, values };
     };
 
-    const map: Record<string, Array<{ ts: number; idx: number; created_at: string; fields: string[] }>> = {};
+    const map: Record<
+      string,
+      Array<{ ts: number; idx: number; created_at: string; fields: string[]; values: Record<string, string> }>
+    > = {};
 
     enrichmentForGrid.forEach((e, idx) => {
-      const fields = meaningfulKeys(e);
+      const { keys: fields, values } = meaningfulKeysAndValues(e);
       if (fields.length === 0) return;
 
       const d = parseCreatedAtLocal(e.created_at);
@@ -336,7 +349,7 @@ export default function ClientTeamHeatmap() {
         const rk = rowKeyFrom({ client_id, authorRegion, team });
         const ck = cellKeyFrom(rk, wk);
         if (!map[ck]) map[ck] = [];
-        map[ck].push({ ts, idx, created_at: e.created_at, fields });
+        map[ck].push({ ts, idx, created_at: e.created_at, fields, values });
       }
     });
 
