@@ -6,23 +6,92 @@ export function MeetingsModal({
   hovered,
   onClose,
   comments,
+  enrichmentEvents,
   interactions,
   meetings,
   formatDateUTC,
 }: {
-  hovered: { client_id: string; team: string; weekKey: string };
+  hovered: { client_id: string; client_name?: string; authorRegion?: string; team: string; weekKey: string };
   onClose: () => void;
   comments: string[];
+  enrichmentEvents: Array<{ created_at: string; fields: string[] }>;
   interactions: InteractionCell[];
   meetings: RawMeeting[];
   formatDateUTC: (d: Date) => string;
 }) {
+  const fieldLabel = (k: string) => {
+    switch (k) {
+      case "status":
+        return "Status";
+      case "feeling":
+        return "Feeling";
+      case "potential_revenue":
+        return "Potential revenue";
+      case "comment":
+        return "Comment";
+      default:
+        return k.replace(/_/g, " ");
+    }
+  };
+
   return (
     <Modal onClose={onClose}>
       <h3 style={{ marginTop: 0 }}>Meetings</h3>
       <p>
-        Client <strong>{hovered.client_id}</strong> — Team <strong>{hovered.team}</strong> — <em>{hovered.weekKey}</em>
+        Client <strong>{(hovered.client_name ?? "").trim() || hovered.client_id}</strong>
+        {(hovered.client_name ?? "").trim() && (hovered.client_name ?? "").trim() !== hovered.client_id ? (
+          <>
+            {" "}
+            <span style={{ color: "#666" }}>(ID: {hovered.client_id})</span>
+          </>
+        ) : null}
+        {hovered.authorRegion ? (
+          <>
+            {" "}
+            — Author Region <strong>{hovered.authorRegion}</strong>
+          </>
+        ) : null}
+        {" "}
+        — Team <strong>{hovered.team}</strong> — <em>{hovered.weekKey}</em>
       </p>
+
+      {enrichmentEvents.length ? (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: "#444", marginBottom: 6 }}>What changed (enrichment)</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {enrichmentEvents.map((ev, i) => (
+              <div
+                key={`${ev.created_at}-${i}`}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: "1px solid #c4b5fd",
+                  background: "#f5f3ff",
+                }}
+              >
+                <div style={{ fontSize: 11, color: "#555", marginBottom: 4 }}>Saved: {ev.created_at}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {ev.fields.map((k) => (
+                    <span
+                      key={k}
+                      style={{
+                        fontSize: 12,
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        border: "1px solid #ddd",
+                        background: "#fff",
+                        color: "#111",
+                      }}
+                    >
+                      {fieldLabel(k)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {comments.length ? (
         <div style={{ marginBottom: 12 }}>

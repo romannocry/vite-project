@@ -272,6 +272,81 @@ export default function ClientTeamHeatmap() {
     return map;
   }, [enrichmentForGrid]);
 
+  const enrichmentEventsByCellKey = useMemo(() => {
+    const ignoreKeys = new Set<string>(["created_at", "iC ID Top Account", "Author Region", "participant_team"]);
+
+    const meaningfulKeys = (e: Enrichment) => {
+      const keys: string[] = [];
+      const obj = e as unknown as Record<string, unknown>;
+      for (const [k, v] of Object.entries(obj)) {
+        if (ignoreKeys.has(k)) continue;
+        if (v === undefined || v === null) continue;
+
+        if (typeof v === "string") {
+          if (k === "status") {
+            keys.push(k);
+            continue;
+          }
+          if (v.trim().length === 0) continue;
+          keys.push(k);
+          continue;
+        }
+
+        if (typeof v === "number") {
+          if (Number.isFinite(v)) keys.push(k);
+          continue;
+        }
+
+        if (typeof v === "boolean") {
+          keys.push(k);
+          continue;
+        }
+
+        // objects/arrays/etc.
+        keys.push(k);
+      }
+
+      // Stable output (makes UI deterministic)
+      keys.sort();
+      return keys;
+    };
+
+    const map: Record<string, Array<{ ts: number; idx: number; created_at: string; fields: string[] }>> = {};
+
+    enrichmentForGrid.forEach((e, idx) => {
+      const fields = meaningfulKeys(e);
+      if (fields.length === 0) return;
+
+      const d = parseCreatedAtLocal(e.created_at);
+      const ts = d.getTime();
+      if (!Number.isFinite(ts)) return;
+
+      const teams = e.participant_team
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .filter((t) => !isExcludedTeam(t));
+
+      const { year, week } = getISOWeekYear(d);
+      const wk = `${year}-W${String(week).padStart(2, "0")}`;
+
+      for (const team of teams) {
+        const client_id = e["iC ID Top Account"];
+        const authorRegion = typeof e["Author Region"] === "string" ? e["Author Region"].trim() : "";
+        const rk = rowKeyFrom({ client_id, authorRegion, team });
+        const ck = cellKeyFrom(rk, wk);
+        if (!map[ck]) map[ck] = [];
+        map[ck].push({ ts, idx, created_at: e.created_at, fields });
+      }
+    });
+
+    for (const events of Object.values(map)) {
+      events.sort((a, b) => a.ts - b.ts || a.idx - b.idx);
+    }
+
+    return map;
+  }, [enrichmentForGrid]);
+
   const statusByRowKey = useMemo(() => {
     const map: Record<string, { status: OverlayStatus; ts: number; idx: number }> = {};
     normalizedEnrichment.forEach((e, idx) => {
@@ -493,6 +568,7 @@ export default function ClientTeamHeatmap() {
               setHovered({
                 client_id: params.data.client_id,
                 client_name: params.data.client_name,
+                authorRegion: params.data.authorRegion,
                 team: params.data.team,
                 rowKey: rowKeyFrom({
                   client_id: params.data.client_id,
@@ -1003,12 +1079,19 @@ export default function ClientTeamHeatmap() {
 
       {modalOpen && hovered ? (
         <MeetingsModal
-          hovered={{ client_id: hovered.client_id, team: hovered.team, weekKey: hovered.weekKey }}
+          hovered={{
+            client_id: hovered.client_id,
+            client_name: hovered.client_name,
+            team: hovered.team,
+            authorRegion: hovered.authorRegion,
+            weekKey: hovered.weekKey,
+          }}
           onClose={() => {
             setModalOpen(false);
             setHovered(null);
           }}
           comments={commentsByCellKey[cellKeyFrom(hovered.rowKey, hovered.weekKey)] ?? []}
+          enrichmentEvents={enrichmentEventsByCellKey[cellKeyFrom(hovered.rowKey, hovered.weekKey)] ?? []}
           interactions={hovered.interactions}
           meetings={meetingsForGrid}
           formatDateUTC={formatDateUTC}

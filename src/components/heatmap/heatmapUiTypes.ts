@@ -27,6 +27,7 @@ export type HoveredCellState =
   | {
       client_id: string;
       client_name?: string;
+      authorRegion?: string;
       team: string;
       rowKey: string;
       weekKey: string;
