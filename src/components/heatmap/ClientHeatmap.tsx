@@ -77,7 +77,7 @@ export default function ClientTeamHeatmap() {
   const rows = useHeatmapData(meetingsForGrid, { excludedTeams });
 
   // Default grouping on load.
-  const [groupBy, setGroupBy] = useState<"none" | "client" | "team" | "status">("team");
+  const [groupBy, setGroupBy] = useState<"none" | "client" | "team" | "status" | "bernstein_team">("team");
 
   const rowKeyFrom = (r: { client_id: string; authorRegion: string; team: string }) =>
     `${r.client_id}__${r.authorRegion}__${r.team}`;
@@ -497,6 +497,7 @@ export default function ClientTeamHeatmap() {
     client_name?: string;
     authorRegion: string;
     team: string;
+    bernsteinTeam?: string;
     status: string;
     firstMeeting: string;
     sinceLastMeeting: string;
@@ -540,6 +541,7 @@ export default function ClientTeamHeatmap() {
         client_name: row.client_name,
         authorRegion: row.authorRegion,
         team: row.team,
+        bernsteinTeam: row.bernsteinTeam,
         status,
         firstMeeting,
         sinceLastMeeting: formatSinceDays(daysSince),
@@ -653,7 +655,9 @@ export default function ClientTeamHeatmap() {
                   status: existingStatus,
                   feeling: (feelingByRowKey[key] ?? "") as OverlayFeeling,
                   potentialRevenue:
-                    potentialRevenueByRowKey[key] === undefined ? "" : String(potentialRevenueByRowKey[key]),
+                    potentialRevenueByRowKey[key] === undefined || potentialRevenueByRowKey[key] <= 0
+                      ? ""
+                      : String(potentialRevenueByRowKey[key]),
                   savedAtDate: formatDateLocal(new Date()),
                   newComment: "",
                 });
@@ -691,6 +695,15 @@ export default function ClientTeamHeatmap() {
         field: "authorRegion",
         pinned: "left",
         width: 90,
+      },
+      {
+        headerName: "Bernstein team",
+        field: "bernsteinTeam",
+        pinned: "left",
+        width: 140,
+        enableRowGroup: true,
+        rowGroup: groupBy === "bernstein_team",
+        hide: groupBy === "bernstein_team",
       },
       /*{
         headerName: "Client Name",
@@ -733,7 +746,7 @@ export default function ClientTeamHeatmap() {
           if (!row) return "";
           const key = rowKeyFrom(row);
           const v = potentialRevenueByRowKey[key];
-          return v === undefined ? "" : v;
+          return v === undefined || v <= 0 ? "" : v;
         },
       },
       {
@@ -966,6 +979,20 @@ export default function ClientTeamHeatmap() {
         </button>
         <button
           type="button"
+          onClick={() => setGroupBy("bernstein_team")}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px solid #ddd",
+            background: groupBy === "bernstein_team" ? "#111" : "#fff",
+            color: groupBy === "bernstein_team" ? "#fff" : "#111",
+            cursor: "pointer",
+          }}
+        >
+          Bernstein team
+        </button>
+        <button
+          type="button"
           onClick={() => setGroupBy("status")}
           style={{
             padding: "6px 10px",
@@ -1012,6 +1039,8 @@ export default function ClientTeamHeatmap() {
                 ? "Client"
                 : groupBy === "team"
                   ? "Team"
+                  : groupBy === "bernstein_team"
+                    ? "Bernstein team"
                   : groupBy === "status"
                     ? "Status"
                     : "Group",
@@ -1056,7 +1085,7 @@ export default function ClientTeamHeatmap() {
             const prRaw = overlayEditor.potentialRevenue.trim();
             const prNum = prRaw ? Number(prRaw) : undefined;
             const potentialRevenueStore =
-              prNum === undefined ? undefined : Number.isFinite(prNum) && prNum >= 0 ? prNum : undefined;
+              prNum === undefined ? undefined : Number.isFinite(prNum) && prNum > 0 ? prNum : undefined;
 
             if (!trimmedComment && !statusStore && !feelingStore && potentialRevenueStore === undefined) {
               alert("Nothing to save (no status, feeling, or comment)");

@@ -11,6 +11,7 @@ export interface RawMeeting {
   "Author Region"?: string;
   activityDate?: string;
   participant_team: string;
+  bernstein_team?: string;
   status?: "live" | "on hold" | "abandonned" | "onboarding in progress" | "test" | "";
 }
 

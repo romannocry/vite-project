@@ -7,6 +7,7 @@ export interface InteractionCell {
   client_name?: string;
   authorRegion: string;
   team: string;
+  bernsteinTeam?: string;
   status: RawMeeting["status"];
   id: string;
   date: Date;
@@ -18,6 +19,7 @@ export interface HeatmapRow {
   client_name?: string;
   authorRegion: string;
   team: string;
+  bernsteinTeam?: string;
   status: string;
   cells: Record<number, InteractionCell>;
   maxIndex: number;
@@ -64,6 +66,8 @@ export function useHeatmapData(
     // 1) Explode multi-team meetings into per-team entries
     const exploded: Omit<InteractionCell, "interactionIndex">[] = meetings.flatMap((m) => {
       const authorRegion = typeof m["Author Region"] === "string" ? m["Author Region"].trim() : "";
+      const bernsteinTeamRaw = typeof m.bernstein_team === "string" ? m.bernstein_team.trim() : "";
+      const bernsteinTeam = bernsteinTeamRaw === "*" ? "" : bernsteinTeamRaw;
       const date = meetingDate(m);
       if (isNaN(date.getTime())) return [];
       const teamTokens = m.participant_team
@@ -87,6 +91,7 @@ export function useHeatmapData(
         client_name: m["Top Account"] ?? m.client_name,
         authorRegion,
         team,
+        bernsteinTeam,
         id: m.id,
         date,
         status: m.status,
@@ -113,6 +118,12 @@ export function useHeatmapData(
     return Object.values(grouped).map((rows) => {
       const { client_id, client_name, authorRegion, team } = rows[0];
 
+      const lastNonEmptyBernsteinTeam = [...rows]
+        .reverse()
+        .map((r) => (typeof r.bernsteinTeam === "string" ? r.bernsteinTeam.trim() : ""))
+        .find((v) => v.length > 0);
+      const bernsteinTeam = lastNonEmptyBernsteinTeam ?? "";
+
       const lastNonEmptyStatus = [...rows]
         .reverse()
         .map((r) => (typeof r.status === "string" ? r.status.trim() : ""))
@@ -129,6 +140,7 @@ export function useHeatmapData(
         client_name,
         authorRegion,
         team,
+        bernsteinTeam,
         status,
         cells,
         maxIndex: rows.length - 1,

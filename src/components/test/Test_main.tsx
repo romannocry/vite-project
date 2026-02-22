@@ -1,10 +1,11 @@
+import ListOfRows from "./ListOfRows"
 import Parent from "./Parent"
 
 function Test_main(){
 
     return (
         <>
-        <Parent/>
+        <ListOfRows/>
         </>
     )
 }
